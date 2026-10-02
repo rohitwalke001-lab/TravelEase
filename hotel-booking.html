@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+```
+<title>Book Hotel - TravelEase</title>
+
+<link rel="stylesheet" href="style.css">
+```
+
+</head>
+
+<body>
+
+```
+<nav>
+
+    <h2>🚌 TravelEase</h2>
+
+    <a href="hotels.html">
+        ← Back
+    </a>
+
+</nav>
+
+
+<div class="booking-page">
+
+    <div class="booking-title">
+
+        <h1>🏨 Complete Your Hotel Booking</h1>
+
+        <p>
+            Select your stay details and confirm your hotel booking.
+        </p>
+
+    </div>
+
+
+    <div class="booking-layout">
+
+
+        <div
+            id="selectedHotelDetails"
+            class="booking-details-box"
+        >
+
+        </div>
+
+
+        <div class="booking-form-box">
+
+            <h2>Stay Details</h2>
+
+
+            <label>
+                Check-In Date
+            </label>
+
+            <input
+                type="date"
+                id="checkIn"
+                required
+            >
+
+
+            <label>
+                Check-Out Date
+            </label>
+
+            <input
+                type="date"
+                id="checkOut"
+                required
+            >
+
+
+            <label>
+                Number of Rooms
+            </label>
+
+            <input
+                type="number"
+                id="rooms"
+                min="1"
+                placeholder="Enter number of rooms"
+                required
+            >
+
+
+            <label>
+                Number of Guests
+            </label>
+
+            <input
+                type="number"
+                id="guests"
+                min="1"
+                placeholder="Enter number of guests"
+                required
+            >
+
+
+            <button
+                class="primary-btn booking-confirm-btn"
+                onclick="confirmHotelBooking()"
+            >
+
+                ✅ Confirm Hotel Booking
+
+            </button>
+
+        </div>
+
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+
+<!-- DATE VALIDATION -->
+
+<script>
+
+    let today = new Date();
+
+    let year = today.getFullYear();
+
+    let month = String(
+        today.getMonth() + 1
+    ).padStart(2, "0");
+
+    let day = String(
+        today.getDate()
+    ).padStart(2, "0");
+
+
+    let minDate =
+        year + "-" +
+        month + "-" +
+        day;
+
+
+    let checkIn =
+        document.getElementById(
+            "checkIn"
+        );
+
+
+    let checkOut =
+        document.getElementById(
+            "checkOut"
+        );
+
+
+    // Prevent past dates for Check-In
+    checkIn.min = minDate;
+
+
+    // Prevent past dates for Check-Out
+    checkOut.min = minDate;
+
+
+    // When Check-In date changes
+    checkIn.addEventListener(
+        "change",
+        function()
+        {
+
+            let selectedDate =
+                new Date(
+                    checkIn.value
+                );
+
+
+            // Add 1 day
+            selectedDate.setDate(
+                selectedDate.getDate() + 1
+            );
+
+
+            let nextYear =
+                selectedDate.getFullYear();
+
+
+            let nextMonth =
+                String(
+                    selectedDate.getMonth() + 1
+                ).padStart(2, "0");
+
+
+            let nextDay =
+                String(
+                    selectedDate.getDate()
+                ).padStart(2, "0");
+
+
+            let nextDate =
+                nextYear + "-" +
+                nextMonth + "-" +
+                nextDay;
+
+
+            // Check-Out must be after Check-In
+            checkOut.min = nextDate;
+
+
+            // Automatically update Check-Out
+            if(
+                checkOut.value < nextDate
+            )
+            {
+
+                checkOut.value =
+                    nextDate;
+
+            }
+
+        }
+    );
+
+
+    // Set today's date as default Check-In
+    checkIn.value = minDate;
+
+
+    // Trigger Check-In change
+    checkIn.dispatchEvent(
+        new Event("change")
+    );
+
+</script>
+```
+
+</body>
+
+</html>

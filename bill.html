@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>TravelEase Bill</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <nav>
+
+        <h2>🚌 TravelEase</h2>
+
+    </nav>
+
+
+    <div class="bill-page">
+
+        <div class="bill-header">
+
+            <h1>Booking Confirmation</h1>
+
+            <p>Your travel booking has been successfully confirmed!</p>
+
+        </div>
+
+
+        <div
+            id="billContent"
+            class="bill-container"
+        >
+
+        </div>
+
+
+        <div class="bill-buttons">
+
+            <button
+                class="primary-btn"
+                onclick="printBill()"
+            >
+
+                🖨️ Print Bill
+
+            </button>
+
+
+            <button
+                class="secondary-btn"
+                onclick="window.location.href='bookings.html'"
+            >
+
+                📋 My Bookings
+
+            </button>
+
+
+            <button
+                class="secondary-btn"
+                onclick="window.location.href='index.html'"
+            >
+
+                🏠 Back To Home
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Payment - TravelEase</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <nav>
+
+        <div class="logo">
+
+            🚌 TravelEase
+
+        </div>
+
+    </nav>
+
+
+    <div class="payment-page">
+
+        <div class="payment-container">
+
+            <h1>
+                💳 Payment
+            </h1>
+
+
+            <p class="payment-subtitle">
+
+                Complete your booking payment
+
+            </p>
+
+
+            <div
+                id="paymentDetails"
+                class="payment-details"
+            >
+
+            </div>
+
+
+            <h3>
+                Select Payment Method
+            </h3>
+
+
+            <div class="payment-methods">
+
+                <label class="payment-option">
+
+                    <input
+                        type="radio"
+                        name="payment"
+                        value="UPI"
+                        checked
+                    >
+
+                    📱 UPI
+
+                </label>
+
+
+                <label class="payment-option">
+
+                    <input
+                        type="radio"
+                        name="payment"
+                        value="Card"
+                    >
+
+                    💳 Credit / Debit Card
+
+                </label>
+
+
+                <label class="payment-option">
+
+                    <input
+                        type="radio"
+                        name="payment"
+                        value="Net Banking"
+                    >
+
+                    🏦 Net Banking
+
+                </label>
+
+            </div>
+
+
+            <button
+                class="primary-btn payment-btn"
+                onclick="processPayment()"
+            >
+
+                Pay Now
+
+            </button>
+
+
+            <p class="demo-payment-text">
+
+                🔒 This is a demo payment system.
+                No real money will be charged.
+
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

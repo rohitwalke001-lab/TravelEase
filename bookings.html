@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        My Bookings - TravelEase
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================
+     NAVBAR
+========================================= -->
+
+<nav>
+
+    <a
+        href="index.html"
+        class="logo"
+    >
+
+        🚌 Travel<span>Ease</span>
+
+    </a>
+
+
+    <ul class="nav-links">
+
+        <li>
+            <a href="index.html">
+                Home
+            </a>
+        </li>
+
+
+        <li>
+            <a href="buses.html">
+                Bus Tickets
+            </a>
+        </li>
+
+
+        <li>
+            <a href="hotels.html">
+                Hotels
+            </a>
+        </li>
+
+
+        <li>
+            <a href="destinations.html">
+                Destinations
+            </a>
+        </li>
+
+
+        <li>
+            <a href="packages.html">
+                Packages
+            </a>
+        </li>
+
+
+        <li>
+            <a
+                href="bookings.html"
+                class="active"
+            >
+                My Bookings
+            </a>
+        </li>
+
+    </ul>
+
+
+    <div
+        class="nav-buttons"
+        id="navButtons"
+    ></div>
+
+</nav>
+
+
+
+<!-- =========================================
+     BOOKINGS HERO
+========================================= -->
+
+<section class="bookings-hero">
+
+
+    <div class="bookings-hero-content">
+
+
+        <div class="bookings-badge">
+
+            📋 YOUR TRAVEL JOURNEY
+
+        </div>
+
+
+        <h1>
+
+            Manage Your
+            <span>Bookings</span>
+
+        </h1>
+
+
+        <p>
+
+            View all your bus, hotel and travel package
+            bookings in one convenient place.
+
+        </p>
+
+
+        <div class="bookings-hero-features">
+
+
+            <div class="bookings-feature">
+
+                <span>
+                    🚌
+                </span>
+
+                <div>
+
+                    <strong>
+                        Bus Bookings
+                    </strong>
+
+                    <p>
+                        View your upcoming journeys
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="bookings-feature">
+
+                <span>
+                    🏨
+                </span>
+
+                <div>
+
+                    <strong>
+                        Hotel Bookings
+                    </strong>
+
+                    <p>
+                        Manage your stays
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="bookings-feature">
+
+                <span>
+                    🎁
+                </span>
+
+                <div>
+
+                    <strong>
+                        Package Bookings
+                    </strong>
+
+                    <p>
+                        Check your travel packages
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    <div class="bookings-hero-icon">
+
+        📋
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================
+     BOOKING STATISTICS
+========================================= -->
+
+<section class="booking-stats-section">
+
+
+    <div class="booking-stats-heading">
+
+        <div class="booking-heading-badge">
+
+            📊 BOOKING OVERVIEW
+
+        </div>
+
+
+        <h2>
+
+            Your Travel Summary
+
+        </h2>
+
+
+        <p>
+
+            A quick overview of all your TravelEase bookings.
+
+        </p>
+
+    </div>
+
+
+
+    <div class="booking-stats-grid">
+
+
+        <!-- BUS BOOKINGS -->
+
+        <div class="booking-stat-card">
+
+            <div class="booking-stat-icon">
+
+                🚌
+
+            </div>
+
+
+            <div>
+
+                <h3
+                    id="busBookingCount"
+                >
+                    0
+                </h3>
+
+                <p>
+
+                    Bus Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- HOTEL BOOKINGS -->
+
+        <div class="booking-stat-card">
+
+            <div class="booking-stat-icon">
+
+                🏨
+
+            </div>
+
+
+            <div>
+
+                <h3
+                    id="hotelBookingCount"
+                >
+                    0
+                </h3>
+
+                <p>
+
+                    Hotel Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PACKAGE BOOKINGS -->
+
+        <div class="booking-stat-card">
+
+            <div class="booking-stat-icon">
+
+                🎁
+
+            </div>
+
+
+            <div>
+
+                <h3
+                    id="packageBookingCount"
+                >
+                    0
+                </h3>
+
+                <p>
+
+                    Package Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- TOTAL SPENT -->
+
+        <div class="booking-stat-card">
+
+            <div class="booking-stat-icon">
+
+                💰
+
+            </div>
+
+
+            <div>
+
+                <h3
+                    id="totalSpent"
+                >
+                    ₹0
+                </h3>
+
+                <p>
+
+                    Total Spent
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================
+     BUS BOOKINGS
+========================================= -->
+
+<section class="booking-table-section">
+
+
+    <div class="booking-table-heading">
+
+
+        <div>
+
+            <span class="booking-type-icon">
+
+                🚌
+
+            </span>
+
+
+            <div>
+
+                <h2>
+
+                    Bus Bookings
+
+                </h2>
+
+
+                <p
+                    id="busBookingLabel"
+                >
+
+                    0 Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="booking-table-wrapper">
+
+
+        <table>
+
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Bus
+                    </th>
+
+                    <th>
+                        Route
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Passengers
+                    </th>
+
+                    <th>
+                        Amount
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody
+                id="busBookingTable"
+            >
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================
+     HOTEL BOOKINGS
+========================================= -->
+
+<section class="booking-table-section booking-alt-section">
+
+
+    <div class="booking-table-heading">
+
+
+        <div>
+
+            <span class="booking-type-icon">
+
+                🏨
+
+            </span>
+
+
+            <div>
+
+                <h2>
+
+                    Hotel Bookings
+
+                </h2>
+
+
+                <p
+                    id="hotelBookingLabel"
+                >
+
+                    0 Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="booking-table-wrapper">
+
+
+        <table>
+
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Hotel
+                    </th>
+
+                    <th>
+                        Location
+                    </th>
+
+                    <th>
+                        Check In
+                    </th>
+
+                    <th>
+                        Check Out
+                    </th>
+
+                    <th>
+                        Rooms
+                    </th>
+
+                    <th>
+                        Amount
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody
+                id="hotelBookingTable"
+            >
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================
+     PACKAGE BOOKINGS
+========================================= -->
+
+<section class="booking-table-section">
+
+
+    <div class="booking-table-heading">
+
+
+        <div>
+
+            <span class="booking-type-icon">
+
+                🎁
+
+            </span>
+
+
+            <div>
+
+                <h2>
+
+                    Package Bookings
+
+                </h2>
+
+
+                <p
+                    id="packageBookingLabel"
+                >
+
+                    0 Bookings
+
+                </p>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+
+    <div class="booking-table-wrapper">
+
+
+        <table>
+
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Package
+                    </th>
+
+                    <th>
+                        Destination
+                    </th>
+
+                    <th>
+                        Description
+                    </th>
+
+                    <th>
+                        Guests
+                    </th>
+
+                    <th>
+                        Amount
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody
+                id="packageBookingTable"
+            >
+
+            </tbody>
+
+
+        </table>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =========================================
+     EMPTY MESSAGE
+========================================= -->
+
+<div
+    id="bookingEmpty"
+    class="booking-empty-message"
+>
+
+    <div>
+
+        🚌
+
+    </div>
+
+
+    <h2>
+
+        No Bookings Yet
+
+    </h2>
+
+
+    <p>
+
+        Start exploring amazing destinations
+        and book your next journey!
+
+    </p>
+
+
+    <a
+        href="buses.html"
+        class="primary-btn"
+    >
+
+        Explore TravelEase
+
+    </a>
+
+</div>
+
+
+
+<!-- =========================================
+     TRAVEL TIP
+========================================= -->
+
+<section class="booking-tips-section">
+
+
+    <div class="booking-tips-box">
+
+
+        <div class="booking-tips-icon">
+
+            💡
+
+        </div>
+
+
+        <div>
+
+            <h2>
+
+                Travel Tip
+
+            </h2>
+
+
+            <p>
+
+                Keep checking your bookings before your journey
+                and arrive early for a smooth travel experience.
+
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>

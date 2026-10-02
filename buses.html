@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Bus Tickets - TravelEase</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- ========================================= -->
+<!-- NAVBAR -->
+<!-- ========================================= -->
+
+<nav>
+
+    <div class="logo">
+
+        🚌 Travel<span>Ease</span>
+
+    </div>
+
+
+    <ul class="nav-links">
+
+        <li>
+
+            <a href="index.html">
+                Home
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a
+                href="buses.html"
+                class="active"
+            >
+
+                Bus Tickets
+
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="hotels.html">
+                Hotels
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="destinations.html">
+                Destinations
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="packages.html">
+                Packages
+            </a>
+
+        </li>
+
+
+        <li>
+
+            <a href="bookings.html">
+                My Bookings
+            </a>
+
+        </li>
+
+    </ul>
+
+
+    <div
+        class="nav-buttons"
+        id="navButtons"
+    ></div>
+
+</nav>
+
+
+
+<!-- ========================================= -->
+<!-- BUS HERO SECTION -->
+<!-- ========================================= -->
+
+<section class="bus-hero">
+
+
+    <div class="bus-hero-content">
+
+
+        <div class="bus-badge">
+
+            🚌 EASY • SAFE • COMFORTABLE
+
+        </div>
+
+
+        <h1>
+
+            Your Journey Starts
+            <span>Here</span>
+
+        </h1>
+
+
+        <p>
+
+            Find comfortable and affordable buses
+            for your next journey with TravelEase.
+
+        </p>
+
+
+        <div class="bus-features">
+
+
+            <div class="bus-feature">
+
+                <span>🛡️</span>
+
+                <div>
+
+                    <strong>
+                        Safe Travel
+                    </strong>
+
+                    <p>
+                        Trusted Bus Operators
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="bus-feature">
+
+                <span>💰</span>
+
+                <div>
+
+                    <strong>
+                        Best Prices
+                    </strong>
+
+                    <p>
+                        Affordable Tickets
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="bus-feature">
+
+                <span>⚡</span>
+
+                <div>
+
+                    <strong>
+                        Easy Booking
+                    </strong>
+
+                    <p>
+                        Book In Minutes
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    <div class="bus-hero-image">
+
+        <div class="bus-big-icon">
+
+            🚌
+
+        </div>
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- SEARCH SECTION -->
+<!-- ========================================= -->
+
+<section class="bus-search-section">
+
+
+    <div class="bus-search-heading">
+
+
+        <h2>
+
+            🔍 Find Your Perfect Bus
+
+        </h2>
+
+
+        <p>
+
+            Search buses by route and travel date
+
+        </p>
+
+
+    </div>
+
+
+
+    <div class="search-box bus-search-box">
+
+
+        <div class="search-label">
+
+            <span>
+                🗺️ Plan Your Journey
+            </span>
+
+        </div>
+
+
+
+        <div class="search-row">
+
+
+            <!-- FROM -->
+
+            <div class="bus-input-group">
+
+                <label>
+
+                    📍 FROM
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="from"
+                    placeholder="Enter departure city"
+                >
+
+            </div>
+
+
+
+            <!-- SWAP ICON -->
+
+            <div class="route-icon">
+
+                ⇄
+
+            </div>
+
+
+
+            <!-- TO -->
+
+            <div class="bus-input-group">
+
+                <label>
+
+                    📍 TO
+
+                </label>
+
+
+                <input
+                    type="text"
+                    id="to"
+                    placeholder="Enter destination"
+                >
+
+            </div>
+
+
+
+            <!-- DATE -->
+
+            <div class="bus-input-group">
+
+                <label>
+
+                    📅 TRAVEL DATE
+
+                </label>
+
+
+                <input
+                    type="date"
+                    id="busDate"
+                >
+
+            </div>
+
+
+
+            <!-- SEARCH BUTTON -->
+
+            <button
+                class="search-btn bus-search-btn"
+                onclick="searchBuses()"
+            >
+
+                🔍 Search Buses
+
+            </button>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- POPULAR ROUTES -->
+<!-- ========================================= -->
+
+<section class="popular-routes-section">
+
+
+    <div class="popular-heading">
+
+
+        <h2>
+
+            🔥 Popular Routes
+
+        </h2>
+
+
+        <p>
+
+            Explore some of our popular travel routes
+
+        </p>
+
+
+    </div>
+
+
+
+    <div class="popular-routes">
+
+
+        <div class="route-card">
+
+            <div class="route-city">
+
+                Pune
+
+            </div>
+
+
+            <div class="route-arrow">
+
+                →
+
+            </div>
+
+
+            <div class="route-city">
+
+                Mumbai
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="route-card">
+
+            <div class="route-city">
+
+                Pune
+
+            </div>
+
+
+            <div class="route-arrow">
+
+                →
+
+            </div>
+
+
+            <div class="route-city">
+
+                Nashik
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="route-card">
+
+            <div class="route-city">
+
+                Mumbai
+
+            </div>
+
+
+            <div class="route-arrow">
+
+                →
+
+            </div>
+
+
+            <div class="route-city">
+
+                Goa
+
+            </div>
+
+
+        </div>
+
+
+
+        <div class="route-card">
+
+            <div class="route-city">
+
+                Nashik
+
+            </div>
+
+
+            <div class="route-arrow">
+
+                →
+
+            </div>
+
+
+            <div class="route-city">
+
+                Pune
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- BUS RESULTS -->
+<!-- ========================================= -->
+
+<section class="bus-results-section">
+
+
+    <div class="results-heading">
+
+
+        <h2>
+
+            🚌 Available Buses
+
+        </h2>
+
+
+        <p>
+
+            Search for your journey to see available buses
+
+        </p>
+
+
+    </div>
+
+
+
+    <div
+        id="busResults"
+        class="bus-results"
+    >
+
+
+        <div class="bus-empty">
+
+
+            <div class="empty-icon">
+
+                🚌
+
+            </div>
+
+
+            <h3>
+
+                Search Your Journey
+
+            </h3>
+
+
+            <p>
+
+                Enter your departure city, destination
+                and travel date to find available buses.
+
+            </p>
+
+
+            <div class="empty-tips">
+
+
+                <span>
+                    ✓ Trusted Operators
+                </span>
+
+
+                <span>
+                    ✓ Best Prices
+                </span>
+
+
+                <span>
+                    ✓ Easy Booking
+                </span>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- ========================================= -->
+<!-- WHY CHOOSE US -->
+<!-- ========================================= -->
+
+<section class="bus-why-section">
+
+
+    <div class="why-heading">
+
+
+        <h2>
+
+            Why Travel With Us?
+
+        </h2>
+
+
+        <p>
+
+            Making every journey simple and comfortable
+
+        </p>
+
+
+    </div>
+
+
+
+    <div class="why-grid">
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+
+                🚌
+
+            </div>
+
+
+            <h3>
+
+                Trusted Buses
+
+            </h3>
+
+
+            <p>
+
+                Travel with reliable and verified
+                bus operators.
+
+            </p>
+
+
+        </div>
+
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+
+                💳
+
+            </div>
+
+
+            <h3>
+
+                Secure Booking
+
+            </h3>
+
+
+            <p>
+
+                Simple and secure booking
+                process.
+
+            </p>
+
+
+        </div>
+
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+
+                💰
+
+            </div>
+
+
+            <h3>
+
+                Best Prices
+
+            </h3>
+
+
+            <p>
+
+                Get affordable tickets for
+                your journey.
+
+            </p>
+
+
+        </div>
+
+
+
+        <div class="why-card">
+
+            <div class="why-icon">
+
+                ⭐
+
+            </div>
+
+
+            <h3>
+
+                Easy Experience
+
+            </h3>
+
+
+            <p>
+
+                Search, select and book
+                your bus easily.
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<script src="script.js"></script>
+
+
+<!-- ========================================= -->
+<!-- SET MINIMUM DATE -->
+<!-- ========================================= -->
+
+<script>
+
+
+    let busToday =
+    new Date();
+
+
+    let busYear =
+    busToday.getFullYear();
+
+
+    let busMonth =
+    String(
+        busToday.getMonth() + 1
+    ).padStart(
+        2,
+        "0"
+    );
+
+
+    let busDay =
+    String(
+        busToday.getDate()
+    ).padStart(
+        2,
+        "0"
+    );
+
+
+    let busMinDate =
+    busYear +
+    "-" +
+    busMonth +
+    "-" +
+    busDay;
+
+
+    let busDate =
+    document.getElementById(
+        "busDate"
+    );
+
+
+    if (busDate) {
+
+        busDate.min =
+        busMinDate;
+
+    }
+
+
+</script>
+
+
+</body>
+
+</html>

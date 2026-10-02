@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Book Bus - TravelEase</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+    <nav>
+
+        <h2>🚌 TravelEase</h2>
+
+        <a href="buses.html">
+            ← Back
+        </a>
+
+    </nav>
+
+
+    <div class="booking-page">
+
+        <div class="booking-title">
+
+            <h1>🚌 Complete Your Bus Booking</h1>
+
+            <p>
+                Enter your travel details and confirm your booking.
+            </p>
+
+        </div>
+
+
+        <div class="booking-layout">
+
+
+            <div
+                id="selectedBusDetails"
+                class="booking-details-box"
+            >
+
+            </div>
+
+
+            <div class="booking-form-box">
+
+                <h2>Passenger Details</h2>
+
+
+                <label>
+                    Travel Date
+                </label>
+
+                <input
+                    type="date"
+                    id="travelDate"
+                    required
+                >
+
+
+                <label>
+                    Number of Passengers
+                </label>
+
+                <input
+                    type="number"
+                    id="passengers"
+                    min="1"
+                    placeholder="Enter number of passengers"
+                    required
+                >
+
+
+                <button
+                    class="primary-btn booking-confirm-btn"
+                    onclick="confirmBusBooking()"
+                >
+
+                    ✅ Confirm Booking
+
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+
+    <!-- PREVENT PAST DATE SELECTION -->
+
+    <script>
+
+        let today = new Date();
+
+        let year = today.getFullYear();
+
+        let month = String(
+            today.getMonth() + 1
+        ).padStart(2, "0");
+
+        let day = String(
+            today.getDate()
+        ).padStart(2, "0");
+
+
+        let minDate =
+            year + "-" +
+            month + "-" +
+            day;
+
+
+        let travelDate =
+            document.getElementById(
+                "travelDate"
+            );
+
+
+        // Prevent selecting past dates
+        travelDate.min = minDate;
+
+
+        // Set today's date by default
+        travelDate.value = minDate;
+
+    </script>
+
+
+</body>
+
+</html>

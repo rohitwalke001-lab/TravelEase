@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Book Package - TravelEase</title>
+
+<link
+    rel="stylesheet"
+    href="style.css"
+>
+
+</head>
+
+<body>
+
+
+<nav>
+
+<a
+    href="index.html"
+    class="logo"
+>
+
+    🚌 Travel<span>Ease</span>
+
+</a>
+
+
+<ul class="nav-links">
+
+    <li>
+        <a href="index.html">
+            Home
+        </a>
+    </li>
+
+    <li>
+        <a href="buses.html">
+            Bus Tickets
+        </a>
+    </li>
+
+    <li>
+        <a href="hotels.html">
+            Hotels
+        </a>
+    </li>
+
+    <li>
+        <a href="destinations.html">
+            Destinations
+        </a>
+    </li>
+
+    <li>
+        <a href="packages.html">
+            Packages
+        </a>
+    </li>
+
+    <li>
+        <a href="bookings.html">
+            My Bookings
+        </a>
+    </li>
+
+</ul>
+
+
+<div
+    class="nav-buttons"
+    id="navButtons"
+></div>
+
+</nav>
+
+
+
+<section class="booking-page">
+
+
+<div class="booking-title">
+
+    <h1>
+        🎁 Complete Your Package Booking
+    </h1>
+
+    <p>
+        Select your travel date and number of guests.
+    </p>
+
+</div>
+
+
+
+<div class="booking-layout">
+
+
+    <!-- PACKAGE DETAILS -->
+
+    <div
+        id="selectedPackageDetails"
+        class="booking-details-box"
+    >
+
+    </div>
+
+
+
+    <!-- BOOKING FORM -->
+
+    <div class="booking-form-box">
+
+
+        <h2>
+            Package Booking Details
+        </h2>
+
+
+        <label>
+            Travel Date
+        </label>
+
+
+        <input
+            type="date"
+            id="packageDate"
+            required
+        >
+
+
+        <label>
+            Number of Guests
+        </label>
+
+
+        <input
+            type="number"
+            id="packageGuests"
+            min="1"
+            placeholder="Enter number of guests"
+            required
+        >
+
+
+        <button
+            class="primary-btn booking-confirm-btn"
+            onclick="confirmPackageBooking()"
+        >
+
+            ✅ Continue to Payment
+
+        </button>
+
+
+    </div>
+
+
+</div>
+
+
+</section>
+
+
+<script src="script.js"></script>
+
+
+</body>
+
+</html>
