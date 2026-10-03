@@ -10450,12 +10450,15 @@ window.addEventListener(
     }
 );
 /* ========================================================================
-   TravelEase backend bridge
-   - Keeps the existing frontend UI, HTML structure, CSS and function names.
-   - Persists the existing localStorage data through the TravelEase API.
+   TravelEase MongoDB Backend Bridge
+   - Existing UI / HTML / CSS / functions unchanged
+   - Saves important localStorage data to MongoDB through /api/state
    ======================================================================== */
+
 (function () {
+
     const API_BASE = window.location.origin + "/api";
+
     const PERSISTENT_KEYS = [
         "buses",
         "hotels",
@@ -10466,173 +10469,789 @@ window.addEventListener(
         "ownerRevenue"
     ];
 
-    const originalSetItem = Storage.prototype.setItem;
-    const originalRemoveItem = Storage.prototype.removeItem;
+    const originalSetItem =
+        Storage.prototype.setItem;
+
+    const originalRemoveItem =
+        Storage.prototype.removeItem;
+
     let backendSyncPaused = false;
     let syncTimer = null;
 
+
+    // =========================================================
+    // READ CURRENT FRONTEND DATA
+    // =========================================================
+
     function readPersistentState() {
+
         const state = {};
+
         PERSISTENT_KEYS.forEach(function (key) {
-            const value = localStorage.getItem(key);
+
+            const value =
+                localStorage.getItem(key);
+
             if (value !== null) {
+
                 try {
-                    state[key] = JSON.parse(value);
-                } catch (e) {
-                    state[key] = value;
+
+                    state[key] =
+                        JSON.parse(value);
+
                 }
+                catch (error) {
+
+                    state[key] =
+                        value;
+
+                }
+
                 return;
             }
 
-            // On the first run the original frontend keeps default arrays in memory.
-            // Seed those exact defaults into the backend without changing the UI code.
+
+            // Default frontend data
+
             try {
-                if (key === "buses" && Array.isArray(buses)) state[key] = buses;
-                else if (key === "hotels" && Array.isArray(hotels)) state[key] = hotels;
-                else if (key === "packages" && Array.isArray(packages)) state[key] = packages;
-                else if (key === "destinations" && Array.isArray(destinations)) state[key] = destinations;
-                else if (key === "bookings" && Array.isArray(bookings)) state[key] = bookings;
-                else if (key === "users") state[key] = [];
-                else if (key === "ownerRevenue") state[key] = 0;
-            } catch (e) {}
+
+                if (
+                    key === "buses" &&
+                    Array.isArray(buses)
+                ) {
+
+                    state[key] = buses;
+
+                }
+
+                else if (
+                    key === "hotels" &&
+                    Array.isArray(hotels)
+                ) {
+
+                    state[key] = hotels;
+
+                }
+
+                else if (
+                    key === "packages" &&
+                    Array.isArray(packages)
+                ) {
+
+                    state[key] = packages;
+
+                }
+
+                else if (
+                    key === "destinations" &&
+                    Array.isArray(destinations)
+                ) {
+
+                    state[key] = destinations;
+
+                }
+
+                else if (
+                    key === "bookings" &&
+                    Array.isArray(bookings)
+                ) {
+
+                    state[key] = bookings;
+
+                }
+
+                else if (key === "users") {
+
+                    state[key] = [];
+
+                }
+
+                else if (key === "ownerRevenue") {
+
+                    state[key] = 0;
+
+                }
+
+            }
+            catch (error) {}
+
         });
+
         return state;
     }
 
+
+    // =========================================================
+    // APPLY MONGODB DATA TO FRONTEND
+    // =========================================================
+
     function refreshFrontendFromState(state) {
-        if (!state || typeof state !== "object") return;
+
+        if (
+            !state ||
+            typeof state !== "object"
+        ) {
+
+            return;
+        }
+
 
         backendSyncPaused = true;
+
+
         try {
+
             PERSISTENT_KEYS.forEach(function (key) {
-                if (Object.prototype.hasOwnProperty.call(state, key)) {
-                    const value = state[key];
-                    originalSetItem.call(localStorage, key, JSON.stringify(value));
+
+                if (
+                    Object.prototype.hasOwnProperty.call(
+                        state,
+                        key
+                    )
+                ) {
+
+                    originalSetItem.call(
+                        localStorage,
+                        key,
+                        JSON.stringify(state[key])
+                    );
+
                 }
+
             });
 
-            if (Array.isArray(state.buses)) buses = state.buses;
-            if (Array.isArray(state.hotels)) hotels = state.hotels;
-            if (Array.isArray(state.packages)) packages = state.packages;
-            if (Array.isArray(state.destinations)) destinations = state.destinations;
-            if (Array.isArray(state.bookings)) bookings = state.bookings;
-        } finally {
+
+            // Update global arrays
+
+            if (Array.isArray(state.buses)) {
+
+                buses = state.buses;
+
+            }
+
+
+            if (Array.isArray(state.hotels)) {
+
+                hotels = state.hotels;
+
+            }
+
+
+            if (Array.isArray(state.packages)) {
+
+                packages = state.packages;
+
+            }
+
+
+            if (Array.isArray(state.destinations)) {
+
+                destinations =
+                    state.destinations;
+
+            }
+
+
+            if (Array.isArray(state.bookings)) {
+
+                bookings =
+                    state.bookings;
+
+            }
+
+        }
+        finally {
+
             backendSyncPaused = false;
+
         }
 
-        // Re-render only the views that exist on the current page.
-        try { if (typeof updateNavbar === "function") updateNavbar(); } catch (e) {}
-        try { if (typeof showAllBuses === "function") showAllBuses(); } catch (e) {}
-        try { if (typeof showHotels === "function") showHotels(); } catch (e) {}
-        try { if (typeof showPackages === "function") showPackages(); } catch (e) {}
-        try { if (typeof showDestinations === "function") showDestinations(); } catch (e) {}
-        try { if (typeof renderBookings === "function") renderBookings(); } catch (e) {}
-        try { if (typeof showBookings === "function") showBookings(); } catch (e) {}
-        try { if (typeof showVisitList === "function") showVisitList(); } catch (e) {}
-        try { if (typeof showAdminBookings === "function") showAdminBookings(); } catch (e) {}
-        try { if (typeof showAdminBuses === "function") showAdminBuses(); } catch (e) {}
-        try { if (typeof showAdminHotels === "function") showAdminHotels(); } catch (e) {}
-        try { if (typeof showAdminPackages === "function") showAdminPackages(); } catch (e) {}
-        try { if (typeof showAdminDestinations === "function") showAdminDestinations(); } catch (e) {}
-        try { if (typeof updateAdminCounts === "function") updateAdminCounts(); } catch (e) {}
-        try { if (typeof updateBookingStatusCounts === "function") updateBookingStatusCounts(); } catch (e) {}
-        try { if (typeof updateRevenue === "function") updateRevenue(); } catch (e) {}
-        try { if (typeof showBill === "function") showBill(); } catch (e) {}
+
+        // =====================================================
+        // REFRESH CURRENT PAGE
+        // =====================================================
+
+        try {
+
+            if (
+                typeof updateNavbar === "function"
+            ) {
+
+                updateNavbar();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAllBuses === "function"
+            ) {
+
+                showAllBuses();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showHotels === "function"
+            ) {
+
+                showHotels();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showPackages === "function"
+            ) {
+
+                showPackages();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showDestinations === "function"
+            ) {
+
+                showDestinations();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof renderBookings === "function"
+            ) {
+
+                renderBookings();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showBookings === "function"
+            ) {
+
+                showBookings();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAdminBookings === "function"
+            ) {
+
+                showAdminBookings();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAdminBuses === "function"
+            ) {
+
+                showAdminBuses();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAdminHotels === "function"
+            ) {
+
+                showAdminHotels();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAdminPackages === "function"
+            ) {
+
+                showAdminPackages();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof showAdminDestinations === "function"
+            ) {
+
+                showAdminDestinations();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof updateAdminCounts === "function"
+            ) {
+
+                updateAdminCounts();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof updateBookingStatusCounts === "function"
+            ) {
+
+                updateBookingStatusCounts();
+
+            }
+
+        }
+        catch (e) {}
+
+
+        try {
+
+            if (
+                typeof updateRevenue === "function"
+            ) {
+
+                updateRevenue();
+
+            }
+
+        }
+        catch (e) {}
+
     }
+
+
+    // =========================================================
+    // SAVE COMPLETE STATE TO MONGODB
+    // =========================================================
 
     async function pushState() {
-        if (backendSyncPaused) return;
-        try {
-            await fetch(API_BASE + "/state", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(readPersistentState())
-            });
-        } catch (e) {
-            // LocalStorage remains the fallback if the backend is temporarily unavailable.
+
+        if (backendSyncPaused) {
+
+            return;
+
         }
+
+
+        try {
+
+            const state =
+                readPersistentState();
+
+
+            const response =
+                await fetch(
+                    API_BASE + "/state",
+                    {
+                        method: "PUT",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify(state)
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                console.error(
+                    "TravelEase: Backend save failed."
+                );
+
+                return;
+
+            }
+
+
+            console.log(
+                "TravelEase: Data saved to MongoDB."
+            );
+
+        }
+        catch (error) {
+
+            console.error(
+                "TravelEase: MongoDB sync error:",
+                error
+            );
+
+        }
+
     }
+
+
+    // =========================================================
+    // DELAYED SYNC
+    // =========================================================
 
     function scheduleSync() {
-        if (backendSyncPaused) return;
+
+        if (backendSyncPaused) {
+
+            return;
+
+        }
+
+
         clearTimeout(syncTimer);
-        syncTimer = setTimeout(pushState, 350);
+
+
+        syncTimer =
+            setTimeout(
+                function () {
+
+                    pushState();
+
+                },
+                500
+            );
+
     }
 
-    Storage.prototype.setItem = function (key, value) {
-        originalSetItem.call(this, key, value);
-        if (this === localStorage && PERSISTENT_KEYS.indexOf(key) !== -1) scheduleSync();
-    };
 
-    Storage.prototype.removeItem = function (key) {
-        originalRemoveItem.call(this, key);
-        if (this === localStorage && PERSISTENT_KEYS.indexOf(key) !== -1) scheduleSync();
-    };
+    // =========================================================
+    // INTERCEPT localStorage.setItem
+    // =========================================================
+
+    Storage.prototype.setItem =
+        function (key, value) {
+
+            originalSetItem.call(
+                this,
+                key,
+                value
+            );
+
+
+            if (
+                this === localStorage &&
+                PERSISTENT_KEYS.includes(key)
+            ) {
+
+                scheduleSync();
+
+            }
+
+        };
+
+
+    // =========================================================
+    // INTERCEPT localStorage.removeItem
+    // =========================================================
+
+    Storage.prototype.removeItem =
+        function (key) {
+
+            originalRemoveItem.call(
+                this,
+                key
+            );
+
+
+            if (
+                this === localStorage &&
+                PERSISTENT_KEYS.includes(key)
+            ) {
+
+                scheduleSync();
+
+            }
+
+        };
+
+
+    // =========================================================
+    // LOAD DATA FROM MONGODB
+    // =========================================================
 
     async function hydrateFromBackend() {
-        try {
-            const response = await fetch(API_BASE + "/state", { cache: "no-store" });
-            if (!response.ok) return;
-            const payload = await response.json();
 
-            if (payload.initialized && payload.state && Object.keys(payload.state).length > 0) {
-                refreshFrontendFromState(payload.state);
-            } else {
-                // First run: seed the backend with the exact data already used by the frontend.
-                await pushState();
+        try {
+
+            const response =
+                await fetch(
+                    API_BASE + "/state",
+                    {
+                        cache: "no-store"
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                console.error(
+                    "TravelEase: Unable to load backend data."
+                );
+
+                return;
+
             }
-        } catch (e) {
-            // Running the frontend directly from a file or without the server still works locally.
+
+
+            const payload =
+                await response.json();
+
+
+            // =================================================
+            // MONGODB HAS DATA
+            // =================================================
+
+            if (
+                payload.initialized &&
+                payload.state &&
+                Object.keys(payload.state).length > 0
+            ) {
+
+                console.log(
+                    "TravelEase: Loading data from MongoDB."
+                );
+
+
+                refreshFrontendFromState(
+                    payload.state
+                );
+
+            }
+
+
+            // =================================================
+            // FIRST RUN
+            // =================================================
+
+            else {
+
+                console.log(
+                    "TravelEase: Initial data upload."
+                );
+
+
+                await pushState();
+
+            }
+
         }
+        catch (error) {
+
+            console.error(
+                "TravelEase: Backend unavailable.",
+                error
+            );
+
+        }
+
     }
 
-    // Use the backend for owner authentication while keeping the same UI/redirect behavior.
-    if (typeof adminLogin === "function") {
-        adminLogin = async function () {
-            const usernameElement = document.getElementById("username");
-            const passwordElement = document.getElementById("password");
-            const username = usernameElement ? usernameElement.value.trim() : "";
-            const password = passwordElement ? passwordElement.value.trim() : "";
 
-            if (!username || !password) {
-                alert("Please enter owner login details!");
+    // =========================================================
+    // ADMIN LOGIN → BACKEND
+    // =========================================================
+
+    if (
+        typeof adminLogin === "function"
+    ) {
+
+        adminLogin = async function () {
+
+            const usernameElement =
+                document.getElementById(
+                    "username"
+                );
+
+
+            const passwordElement =
+                document.getElementById(
+                    "password"
+                );
+
+
+            const username =
+                usernameElement
+                    ? usernameElement.value.trim()
+                    : "";
+
+
+            const password =
+                passwordElement
+                    ? passwordElement.value.trim()
+                    : "";
+
+
+            if (
+                !username ||
+                !password
+            ) {
+
+                alert(
+                    "Please enter owner login details!"
+                );
+
                 return;
+
             }
+
 
             try {
-                const response = await fetch(API_BASE + "/auth/admin-login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password })
-                });
-                const result = await response.json();
+
+                const response =
+                    await fetch(
+                        API_BASE +
+                        "/auth/admin-login",
+                        {
+
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    username,
+                                    password
+                                })
+
+                        }
+                    );
+
+
+                const result =
+                    await response.json();
+
 
                 if (!response.ok) {
-                    alert(result.message || "Invalid owner login details!");
+
+                    alert(
+                        result.message ||
+                        "Invalid owner login details!"
+                    );
+
                     return;
+
                 }
 
-                localStorage.setItem("currentUser", result.displayName || "TravelEase Owner");
-                localStorage.setItem("userRole", "admin");
-                alert("Owner login successful!");
-                window.location.href = "admin-dashboard.html";
-            } catch (e) {
-                // Keep the original login available if the API is temporarily offline.
-                if (username === "admin" && password === "admin123") {
-                    localStorage.setItem("currentUser", "TravelEase Owner");
-                    localStorage.setItem("userRole", "admin");
-                    alert("Owner login successful!");
-                    window.location.href = "admin-dashboard.html";
-                } else {
-                    alert("Unable to connect to backend. Please try again.");
-                }
+
+                localStorage.setItem(
+                    "currentUser",
+                    result.displayName ||
+                    "TravelEase Owner"
+                );
+
+
+                localStorage.setItem(
+                    "userRole",
+                    "admin"
+                );
+
+
+                alert(
+                    "Owner login successful!"
+                );
+
+
+                window.location.href =
+                    "admin-dashboard.html";
+
             }
+            catch (error) {
+
+                alert(
+                    "Unable to connect to backend. Please try again."
+                );
+
+            }
+
         };
+
     }
 
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", hydrateFromBackend);
-    } else {
-        hydrateFromBackend();
+
+    // =========================================================
+    // START BACKEND HYDRATION
+    // =========================================================
+
+    if (
+        document.readyState === "loading"
+    ) {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            hydrateFromBackend
+        );
+
     }
+
+    else {
+
+        hydrateFromBackend();
+
+    }
+
 })();
