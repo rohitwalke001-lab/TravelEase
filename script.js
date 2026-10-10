@@ -11255,3 +11255,54 @@ window.addEventListener(
     }
 
 })();
+
+document.addEventListener("DOMContentLoaded", function () {
+    const fieldGroups = [
+        ["busName", "busFrom", "busTo", "busTime", "busPrice"],
+        ["hotelName", "hotelLocation", "hotelPrice", "totalRooms", "availableRooms"],
+        ["packageEmoji", "packageName", "packageLocation", "packageDescription", "packagePrice", "packageDiscount"],
+        ["destinationEmoji", "destinationName", "destinationDescription", "destinationAttractions", "destinationImage"]
+    ];
+
+    fieldGroups.forEach(function (group) {
+        const fields = group
+            .map(id => document.getElementById(id))
+            .filter(Boolean);
+
+        fields.forEach(function (field, index) {
+            field.addEventListener("keydown", function (event) {
+                if (field.tagName === "TEXTAREA") return;
+                if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+                const textInputTypes = [
+                    "text", "search", "email", "url", "tel", "password"
+                ];
+
+                const supportsTextSelection =
+                    textInputTypes.includes(field.type);
+
+                if (event.key === "ArrowRight") {
+                    const atEnd = !supportsTextSelection ||
+                        (field.selectionStart === field.value.length &&
+                         field.selectionEnd === field.value.length);
+
+                    if (atEnd && index < fields.length - 1) {
+                        event.preventDefault();
+                        fields[index + 1].focus();
+                    }
+                }
+
+                if (event.key === "ArrowLeft") {
+                    const atStart = !supportsTextSelection ||
+                        (field.selectionStart === 0 &&
+                         field.selectionEnd === 0);
+
+                    if (atStart && index > 0) {
+                        event.preventDefault();
+                        fields[index - 1].focus();
+                    }
+                }
+            });
+        });
+    });
+});
