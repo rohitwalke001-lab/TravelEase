@@ -11307,3 +11307,26 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const email = document.getElementById("email");
+    const username = document.getElementById("username");
+    const password = document.getElementById("password");
+
+    [email, username, password].forEach(function (field) {
+        if (field) {
+            field.addEventListener("keydown", function (event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+
+                    if (typeof adminLogin === "function" &&
+                        username && username.value.trim() !== "") {
+                        adminLogin();
+                    } else if (typeof loginUser === "function") {
+                        loginUser();
+                    }
+                }
+            });
+        }
+    });
+});
+
