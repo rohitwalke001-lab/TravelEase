@@ -1,280 +1,119 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <title>
-        Register - TravelEase
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Create a TravelEase account to book journeys, explore destinations and manage your travel bookings.">
+    <meta name="theme-color" content="#ffffff">
+    <title>Register - TravelEase</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body class="auth-page">
-
-
-<nav>
-
-    <a
-        href="index.html"
-        class="logo">
-
+ 
+<nav aria-label="Main navigation">
+    <a href="index.html" class="logo" aria-label="TravelEase home">
         🚌 Travel<span>Ease</span>
-
     </a>
-
-
+ 
     <ul class="nav-links">
-
-        <li>
-            <a href="index.html">
-                Home
-            </a>
-        </li>
-
-        <li>
-            <a href="buses.html">
-                Bus Tickets
-            </a>
-        </li>
-
-        <li>
-            <a href="hotels.html">
-                Hotels
-            </a>
-        </li>
-
-        <li>
-            <a href="destinations.html">
-                Destinations
-            </a>
-        </li>
-
-        <li>
-            <a href="packages.html">
-                Packages
-            </a>
-        </li>
-
+        <li><a href="index.html">Home</a></li>
+        <li><a href="buses.html">Bus Tickets</a></li>
+        <li><a href="hotels.html">Hotels</a></li>
+        <li><a href="destinations.html">Destinations</a></li>
+        <li><a href="packages.html">Packages</a></li>
     </ul>
-
-
-    <div
-        class="nav-buttons"
-        id="navButtons">
-
-    </div>
-
-
+ 
+    <div class="nav-buttons" id="navButtons"></div>
 </nav>
-
-
-
-<section class="auth-container">
-
-
+ 
+<main>
+<section class="auth-container" aria-label="TravelEase account registration">
+ 
     <!-- LEFT SIDE -->
-
     <div class="auth-welcome">
-
-
-        <div class="auth-icon">
-
-            🌍
-
-        </div>
-
-
-        <p class="auth-small-title">
-
-            JOIN TRAVELEASE
-
-        </p>
-
-
-        <h1>
-
-            Start Your Journey
-            With Us
-
-        </h1>
-
-
+        <div class="auth-icon" aria-hidden="true">🌍</div>
+ 
+        <p class="auth-small-title">JOIN TRAVELEASE</p>
+ 
+        <h1>Start Your Journey With Us</h1>
+ 
         <p>
-
             Create your TravelEase account and
             enjoy easy booking, exciting destinations
             and amazing travel packages.
-
         </p>
-
-
+ 
         <div class="auth-features">
-
-
-            <div>
-
-                ✨ Quick & Easy Booking
-
-            </div>
-
-
-            <div>
-
-                ❤️ Save Your Favourite Places
-
-            </div>
-
-
-            <div>
-
-                📋 Manage All Bookings
-
-            </div>
-
-
+            <div>✨ Quick & Easy Booking</div>
+            <div>❤️ Save Your Favourite Places</div>
+            <div>📋 Manage All Bookings</div>
         </div>
-
-
     </div>
-
-
-
+ 
     <!-- REGISTER BOX -->
-
     <div class="auth-box">
-
-
         <div class="auth-box-header">
-
-
-            <div class="auth-form-icon">
-
-                👋
-
-            </div>
-
-
-            <h2>
-
-                Create Account
-
-            </h2>
-
-
-            <p>
-
-                Join TravelEase and start exploring
-
-            </p>
-
-
+            <div class="auth-form-icon" aria-hidden="true">👋</div>
+ 
+            <h2>Create Account</h2>
+ 
+            <p>Join TravelEase and start exploring</p>
         </div>
-
-
-
-        <div class="auth-form">
-
-
-            <label>
-
-                Full Name
-
-            </label>
-
-
+ 
+        <form class="auth-form" id="registerForm" onsubmit="event.preventDefault(); registerUser();">
+            <label for="name">Full Name</label>
             <input
                 type="text"
                 id="name"
-                placeholder="Enter your full name">
-
-
-
-            <label>
-
-                Email Address
-
-            </label>
-
-
+                name="name"
+                placeholder="Enter your full name"
+                autocomplete="name"
+                minlength="2"
+                maxlength="100"
+                required>
+ 
+            <label for="email">Email Address</label>
             <input
                 type="email"
                 id="email"
-                placeholder="Enter your email">
-
-
-
-            <label>
-
-                Password
-
-            </label>
-
-
+                name="email"
+                placeholder="Enter your email"
+                autocomplete="email"
+                inputmode="email"
+                maxlength="254"
+                required>
+ 
+            <label for="password">Password</label>
             <input
                 type="password"
                 id="password"
-                placeholder="Create a password">
-
-
-
-            <button
-                class="auth-btn"
-                onclick="registerUser()">
-
+                name="password"
+                placeholder="Create a password"
+                autocomplete="new-password"
+                minlength="8"
+                required>
+ 
+            <button type="submit" class="auth-btn">
                 Create Account
-
-                <span>
-
-                    →
-
-                </span>
-
+                <span aria-hidden="true">→</span>
             </button>
-
-
+ 
+            <p id="registerMessage" class="auth-message" role="status" aria-live="polite"></p>
+ 
             <div class="auth-divider">
-
-                <span>
-
-                    Already have an account?
-
-                </span>
-
+                <span>Already have an account?</span>
             </div>
-
-
-            <a
-                href="login.html"
-                class="auth-register-link">
-
+ 
+            <a href="login.html" class="auth-register-link">
                 Login Now
-
             </a>
-
-
-        </div>
-
-
+        </form>
     </div>
-
-
+ 
 </section>
-
-
+</main>
+ 
 <script src="script.js"></script>
-
-
 </body>
-
 </html>
