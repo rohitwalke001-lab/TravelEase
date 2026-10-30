@@ -211,6 +211,40 @@ function createAdminToken(username) {
   return `${payload}.${signature}`;
 }
  
+function createSignedToken(payload) {
+  const secret = sessionSecret();
+  if (!secret) throw new Error('ADMIN_SESSION_SECRET or ADMIN_PASSWORD must be configured.');
+  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', secret).update(encoded).digest('base64url');
+  return `${encoded}.${signature}`;
+}
+ 
+function readSignedToken(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const secret = sessionSecret();
+  if (!secret) return null;
+  const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest();
+  const received = Buffer.from(parts[1], 'base64url');
+  if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+    if (!payload.expiresAt || payload.expiresAt < Date.now()) return null;
+    return payload;
+  } catch (_) { return null; }
+}
+ 
+function requireCustomer(req, res, next) {
+  const header = String(req.headers.authorization || '');
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  const payload = readSignedToken(token);
+  if (!payload || payload.role !== 'customer' || !payload.email) {
+    return res.status(401).json({ ok: false, message: 'Customer login required.' });
+  }
+  req.customer = payload;
+  next();
+}
+ 
 function requireAdmin(req, res, next) {
   const header = String(req.headers.authorization || '');
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
@@ -354,27 +388,6 @@ app.put('/api/state', requireAdmin, async (req, res) => {
       }
     }
  
-    // Payment verification is authoritative. A stale admin browser tab must
-    // never overwrite a booking's verified payment / confirmation status.
-    if (Array.isArray(current?.bookings) && Array.isArray(state.bookings)) {
-      const authoritative = new Map(current.bookings
-        .filter(item => item && (item.bookingId || item.id || item._id))
-        .map(item => [String(item.bookingId || item.id || item._id), item]));
-      state.bookings = state.bookings.map(item => {
-        if (!item) return item;
-        const id = String(item.bookingId || item.id || item._id || '');
-        const saved = authoritative.get(id);
-        if (!saved || String(saved.paymentStatus || '').toUpperCase() !== 'PAID_VERIFIED') return item;
-        return {
-          ...item,
-          paymentStatus: saved.paymentStatus,
-          status: saved.status || 'Confirmed',
-          paymentVerifiedAt: saved.paymentVerifiedAt || item.paymentVerifiedAt,
-          paymentReference: saved.paymentReference || item.paymentReference
-        };
-      });
-    }
-
     await saveState(state);
     res.json({ ok: true, state });
   } catch (err) {
@@ -423,6 +436,78 @@ app.post('/api/auth/admin-login', (req, res) => {
       ok: false,
       message: 'Admin session is not configured. Set ADMIN_SESSION_SECRET in Render environment variables.'
     });
+  }
+});
+ 
+// ===============================
+// CUSTOMER AUTHENTICATION (SERVER-SIDE, SHARED ACROSS DEVICES)
+// The browser derives PBKDF2-SHA256 with 210000 iterations and sends only
+// the derived hash + salt. Plaintext passwords are never stored by this API.
+// ===============================
+ 
+function validCustomerPasswordData(hash, salt) {
+  return typeof hash === 'string' && /^[A-Za-z0-9+/]{40,48}={0,2}$/.test(hash) &&
+    typeof salt === 'string' && /^[A-Za-z0-9+/]{20,28}={0,2}$/.test(salt);
+}
+ 
+app.post('/api/auth/customer-register', async (req, res) => {
+  try {
+    const name = cleanText(req.body?.name, 100);
+    const email = cleanText(req.body?.email, 120).toLowerCase();
+    const passwordHash = String(req.body?.passwordHash || '');
+    const passwordSalt = String(req.body?.passwordSalt || '');
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !validCustomerPasswordData(passwordHash, passwordSalt)) {
+      return res.status(400).json({ ok: false, message: 'Valid name, email, and secure password data are required.' });
+    }
+    const state = await getState();
+    if (!state || typeof state !== 'object') return res.status(409).json({ ok: false, message: 'TravelEase data is not initialized.' });
+    const users = Array.isArray(state.users) ? [...state.users] : [];
+    if (users.some(user => String(user?.email || '').toLowerCase() === email)) {
+      return res.status(409).json({ ok: false, message: 'Email already registered. Please log in.' });
+    }
+    users.push({ name, email, passwordHash, passwordSalt, role: 'customer', balance: 0, createdAt: new Date().toISOString() });
+    await updateStateKeys({ users });
+    return res.status(201).json({ ok: true, message: 'Registration successful. Please log in.' });
+  } catch (err) {
+    console.error('Customer registration failed:', err.message);
+    return res.status(500).json({ ok: false, message: 'Unable to register customer.' });
+  }
+});
+ 
+app.post('/api/auth/customer-login', async (req, res) => {
+  try {
+    const email = cleanText(req.body?.email, 120).toLowerCase();
+    const passwordHash = String(req.body?.passwordHash || '');
+    if (!email || !passwordHash) return res.status(400).json({ ok: false, message: 'Email and password are required.' });
+    const state = await getState();
+    const users = Array.isArray(state?.users) ? state.users : [];
+    const user = users.find(item => String(item?.email || '').toLowerCase() === email && item.role === 'customer');
+    if (!user || typeof user.passwordHash !== 'string') {
+      return res.status(401).json({ ok: false, message: 'Invalid email or password. If this is an older local-only account, register it on this device first.' });
+    }
+    const stored = Buffer.from(user.passwordHash);
+    const supplied = Buffer.from(passwordHash);
+    if (stored.length !== supplied.length || !crypto.timingSafeEqual(stored, supplied)) {
+      return res.status(401).json({ ok: false, message: 'Invalid email or password.' });
+    }
+    const token = createSignedToken({ email, role: 'customer', expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000) });
+    return res.json({ ok: true, token, user: { name: cleanText(user.name, 100), email, role: 'customer' } });
+  } catch (err) {
+    console.error('Customer login failed:', err.message);
+    return res.status(500).json({ ok: false, message: 'Unable to log in.' });
+  }
+});
+ 
+app.get('/api/customer/bookings', requireCustomer, async (req, res) => {
+  try {
+    const state = await getState();
+    const bookings = Array.isArray(state?.bookings) ? state.bookings : [];
+    const ownBookings = bookings.filter(booking => String(booking?.customer || '').toLowerCase() === req.customer.email);
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, bookings: ownBookings });
+  } catch (err) {
+    console.error('Customer bookings load failed:', err.message);
+    return res.status(500).json({ ok: false, message: 'Unable to load customer bookings.' });
   }
 });
  
@@ -501,6 +586,16 @@ app.post('/api/payments/submit', async (req, res) => {
     }
  
     const existingPayments = Array.isArray(current.paymentSubmissions) ? current.paymentSubmissions : [];
+ 
+    // One booking may have only one active/verified payment submission.
+    // This prevents accidental duplicate submissions creating duplicate admin rows.
+    const bookingHasPayment = existingPayments.some(p =>
+      String(p?.bookingId || '') === bookingId &&
+      ['PAYMENT_SUBMITTED', 'PAID_VERIFIED'].includes(String(p?.status || '').toUpperCase())
+    );
+    if (bookingHasPayment) {
+      return res.status(409).json({ ok: false, message: 'A payment has already been submitted for this booking. Do not submit it again.' });
+    }
  
     const duplicateUtr = existingPayments.some(p =>
       String(p.utr || '').toLowerCase() === utr.toLowerCase() &&
@@ -678,6 +773,7 @@ app.get('/api/bookings/:bookingId/status', async (req, res) => {
       status: cleanText(booking.status, 40),
       paymentStatus: cleanText(booking.paymentStatus, 40),
       refundStatus: cleanText(booking.refundStatus, 40),
+      totalAmount: Number(booking.totalAmount || booking.amount || booking.price || 0),
       paymentVerifiedAt: booking.paymentVerifiedAt || null,
       refundedAt: booking.refundedAt || null
     });
@@ -788,7 +884,7 @@ app.post('/api/admin/refunds/:refundId/decision', requireAdmin, async (req, res)
     refund.adminNote = note;
  
     booking.refundStatus = refund.status;
-    if (decision === 'APPROVE') booking.status = 'Cancelled';
+    if (decision === 'APPROVE') { booking.status = 'Cancelled'; booking.cancelledAt = now; booking.cancelledBy = 'admin'; }
  
     refunds[index] = refund;
     bookings[bookingIndex] = booking;
@@ -843,6 +939,7 @@ app.post('/api/admin/refunds/:refundId/complete', requireAdmin, async (req, res)
     booking.refundStatus = 'REFUNDED';
     booking.refundUtr = refundUtr;
     booking.refundedAt = now;
+    booking.refundAmount = Number(refund.amount || 0);
  
     refunds[index] = refund;
     bookings[bookingIndex] = booking;
@@ -925,4 +1022,3 @@ connectMongo().finally(() => {
     console.log(`TravelEase running on http://localhost:${PORT}`);
   });
 });
-
