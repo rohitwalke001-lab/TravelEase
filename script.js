@@ -2667,65 +2667,6 @@ async function loginUser() {
  
 // =========================================
 // =========================================
-// ADMIN LOGIN
-// =========================================
- 
-function adminLogin() {
- 
-    let username =
-    document.getElementById(
-        "username"
-    ).value.trim();
- 
- 
-    let password =
-    document.getElementById(
-        "password"
-    ).value.trim();
- 
- 
-    if (
- 
-        username === "admin" &&
- 
-        password === "admin123"
- 
-    ) {
- 
-        localStorage.setItem(
-            "currentUser",
-            "TravelEase Owner"
-        );
- 
- 
-        localStorage.setItem(
-            "userRole",
-            "admin"
-        );
- 
- 
-        alert(
-            "Owner login successful!"
-        );
- 
- 
-        window.location.href =
-        "admin-dashboard.html";
- 
-    }
- 
-    else {
- 
-        alert(
-            "Invalid owner login details!"
-        );
- 
-    }
- 
-}   
- 
- 
-// =========================================
 // LOGOUT
 // =========================================
  
@@ -10371,48 +10312,37 @@ window.addEventListener(
     }
 );
 /* ========================================================================
-   TravelEase MongoDB Backend Bridge - SAFE VERSION
-   - Waits for backend hydration before allowing any upload.
-   - Loads MongoDB data before syncing local changes.
-   - Serializes PUT requests so old requests cannot overwrite newer data.
-   - Keeps localStorage as a local cache; MongoDB remains the shared source.
+   TravelEase MongoDB Backend Bridge - FINAL
+   Public visitors receive catalogue data only.
+   Admin sessions alone can read/write complete private state.
+   Customer bookings are created through the payment API, not full-state PUT.
    ======================================================================== */
- 
 (function () {
     "use strict";
- 
     const API_BASE = window.location.origin + "/api";
- 
-    // These are the keys accepted by the current server.js /api/state route.
-    const PERSISTENT_KEYS = [
-        "buses",
-        "hotels",
-        "packages",
-        "destinations",
-        "bookings",
-        "users",
-        "ownerRevenue"
-    ];
- 
+    const PERSISTENT_KEYS = ["buses", "hotels", "packages", "destinations", "bookings", "users", "ownerRevenue"];
+    const CATALOG_KEYS = ["buses", "hotels", "packages", "destinations"];
     const originalSetItem = Storage.prototype.setItem;
     const originalRemoveItem = Storage.prototype.removeItem;
+    const originalGetItem = Storage.prototype.getItem;
+    let backendReady = false, backendSyncPaused = false, syncTimer = null;
+    let syncQueue = Promise.resolve(), hydrationPromise = null, pendingLocalChange = false;
  
-    let backendReady = false;
-    let backendSyncPaused = false;
-    let syncTimer = null;
-    let syncQueue = Promise.resolve();
-    let hydrationPromise = null;
-    let pendingLocalChange = false;
- 
+    function isAdminSession() {
+        return originalGetItem.call(localStorage, "userRole") === "admin" &&
+            !!originalGetItem.call(localStorage, "adminToken");
+    }
+    function adminHeaders(extra) {
+        const headers = Object.assign({ "Accept": "application/json" }, extra || {});
+        const token = originalGetItem.call(localStorage, "adminToken");
+        if (token) headers.Authorization = "Bearer " + token;
+        return headers;
+    }
     function parseStoredValue(key) {
         const raw = originalGetItem.call(localStorage, key);
         if (raw === null) return undefined;
-        try { return JSON.parse(raw); }
-        catch (error) { return undefined; }
+        try { return JSON.parse(raw); } catch (error) { return undefined; }
     }
- 
-    const originalGetItem = Storage.prototype.getItem;
- 
     function getDefaultValue(key) {
         try {
             if (key === "buses" && Array.isArray(buses)) return buses;
@@ -10425,255 +10355,193 @@ window.addEventListener(
         } catch (error) {}
         return undefined;
     }
- 
     function readPersistentState() {
         const state = {};
-        PERSISTENT_KEYS.forEach(function (key) {
+        PERSISTENT_KEYS.forEach(key => {
             const stored = parseStoredValue(key);
             state[key] = stored !== undefined ? stored : getDefaultValue(key);
         });
         return state;
     }
- 
-    function validateState(state) {
+    function validateFullState(state) {
         if (!state || typeof state !== "object" || Array.isArray(state)) return false;
- 
-        const arrayKeys = [
-            "buses", "hotels", "packages", "destinations", "bookings", "users"
-        ];
- 
-        return arrayKeys.every(function (key) {
-            return Array.isArray(state[key]);
-        }) && (
-            typeof state.ownerRevenue === "number" ||
-            typeof state.ownerRevenue === "string"
-        );
+        return ["buses", "hotels", "packages", "destinations", "bookings", "users"]
+            .every(key => Array.isArray(state[key])) &&
+            (typeof state.ownerRevenue === "number" || typeof state.ownerRevenue === "string");
     }
- 
-    function applyStateToPage(state) {
-        if (!validateState(state)) {
-            throw new Error("Backend returned incomplete TravelEase data.");
-        }
- 
+    function refreshPage() {
+        ["updateNavbar", "showAllBuses", "showHotels", "showPackages", "showDestinations",
+         "renderBookings", "showBookings", "showAdminBookings", "showAdminBuses",
+         "showAdminHotels", "showAdminPackages", "showAdminDestinations",
+         "updateAdminCounts", "updateBookingStatusCounts", "updateRevenue"].forEach(name => {
+            try { if (typeof window[name] === "function") window[name](); }
+            catch (error) { console.warn("TravelEase UI refresh skipped:", name, error); }
+        });
+    }
+    function applyCatalogue(state) {
+        if (!state || typeof state !== "object" || Array.isArray(state)) throw new Error("Invalid public catalogue.");
         backendSyncPaused = true;
         try {
-            PERSISTENT_KEYS.forEach(function (key) {
-                originalSetItem.call(
-                    localStorage,
-                    key,
-                    JSON.stringify(state[key])
-                );
+            CATALOG_KEYS.forEach(key => {
+                if (!Array.isArray(state[key])) throw new Error("Catalogue is missing " + key + ".");
+                originalSetItem.call(localStorage, key, JSON.stringify(state[key]));
             });
- 
-            buses = state.buses;
-            hotels = state.hotels;
-            packages = state.packages;
-            destinations = state.destinations;
-            bookings = state.bookings;
-        } finally {
-            backendSyncPaused = false;
-        }
- 
-        // Refresh visible sections without changing the saved data.
-        [
-            "updateNavbar", "showAllBuses", "showHotels", "showPackages",
-            "showDestinations", "renderBookings", "showBookings",
-            "showAdminBookings", "showAdminBuses", "showAdminHotels",
-            "showAdminPackages", "showAdminDestinations",
-            "updateAdminCounts", "updateBookingStatusCounts", "updateRevenue"
-        ].forEach(function (fnName) {
-            try {
-                if (typeof window[fnName] === "function") window[fnName]();
-            } catch (error) {
-                console.warn("TravelEase UI refresh skipped:", fnName, error);
-            }
-        });
+            buses = state.buses; hotels = state.hotels; packages = state.packages; destinations = state.destinations;
+        } finally { backendSyncPaused = false; }
+        refreshPage();
     }
- 
+    function applyFullState(state) {
+        if (!validateFullState(state)) throw new Error("Backend returned incomplete TravelEase admin data.");
+        backendSyncPaused = true;
+        try {
+            PERSISTENT_KEYS.forEach(key => originalSetItem.call(localStorage, key, JSON.stringify(state[key])));
+            buses = state.buses; hotels = state.hotels; packages = state.packages;
+            destinations = state.destinations; bookings = state.bookings;
+        } finally { backendSyncPaused = false; }
+        refreshPage();
+    }
     async function requestBackendState() {
-        const response = await fetch(API_BASE + "/state", {
-            method: "GET",
-            cache: "no-store",
-            headers: { "Accept": "application/json" }
+        const admin = isAdminSession();
+        const response = await fetch(API_BASE + (admin ? "/state" : "/public/state"), {
+            method: "GET", cache: "no-store",
+            headers: admin ? adminHeaders() : { "Accept": "application/json" }
         });
- 
         if (!response.ok) {
+            if (admin && response.status === 401) originalRemoveItem.call(localStorage, "adminToken");
             throw new Error("Backend state request failed: HTTP " + response.status);
         }
- 
         const payload = await response.json();
-        if (!payload || typeof payload !== "object") {
-            throw new Error("Invalid backend response.");
-        }
-        return payload;
+        if (!payload || typeof payload !== "object") throw new Error("Invalid backend response.");
+        return { payload, admin };
     }
- 
     async function sendStateToBackend() {
-        if (!backendReady || backendSyncPaused) return;
- 
+        if (!backendReady || backendSyncPaused || !isAdminSession()) return false;
         const state = readPersistentState();
-        if (!validateState(state)) {
-            console.error("TravelEase: Save cancelled; local data is incomplete.");
-            return;
-        }
- 
+        if (!validateFullState(state)) throw new Error("Admin save cancelled; local data is incomplete.");
         const response = await fetch(API_BASE + "/state", {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
+            headers: adminHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(state)
         });
- 
         if (!response.ok) {
+            if (response.status === 401) originalRemoveItem.call(localStorage, "adminToken");
             throw new Error("Backend save failed: HTTP " + response.status);
         }
- 
-        console.log("TravelEase: Data successfully saved to backend.");
+        return true;
     }
- 
     function queueBackendSave() {
-        if (!backendReady || backendSyncPaused) {
-            pendingLocalChange = true;
-            return;
-        }
- 
+        if (!isAdminSession() || !backendReady || backendSyncPaused) return;
         clearTimeout(syncTimer);
-        syncTimer = setTimeout(function () {
-            // A promise queue prevents overlapping PUT requests.
-            syncQueue = syncQueue
-                .then(sendStateToBackend)
-                .catch(function (error) {
-                    console.error("TravelEase: Save failed; local copy is retained.", error);
-                });
+        syncTimer = setTimeout(() => {
+            syncQueue = syncQueue.then(sendStateToBackend).catch(error => {
+                console.error("TravelEase: Admin cloud save failed; local copy is retained.", error);
+            });
         }, 400);
     }
- 
-    // Intercept writes only for the persistent keys.
     Storage.prototype.setItem = function (key, value) {
         originalSetItem.call(this, key, value);
-        if (
-            this === localStorage &&
-            PERSISTENT_KEYS.includes(String(key))
-        ) {
-            queueBackendSave();
-        }
+        if (this === localStorage && PERSISTENT_KEYS.includes(String(key))) queueBackendSave();
     };
- 
     Storage.prototype.removeItem = function (key) {
         originalRemoveItem.call(this, key);
-        if (
-            this === localStorage &&
-            PERSISTENT_KEYS.includes(String(key))
-        ) {
-            queueBackendSave();
-        }
+        if (this === localStorage && PERSISTENT_KEYS.includes(String(key))) queueBackendSave();
     };
- 
-    async function hydrateFromBackend() {
-        if (hydrationPromise) return hydrationPromise;
- 
-        hydrationPromise = (async function () {
+    async function refreshCustomerBookingStatuses() {
+        if (isAdminSession()) return;
+        const localBookings = parseStoredValue("bookings");
+        if (!Array.isArray(localBookings) || localBookings.length === 0) return;
+        let changed = false;
+        for (const item of localBookings) {
+            if (!item || !item.bookingId) continue;
             try {
-                const payload = await requestBackendState();
- 
-                if (
-                    payload.initialized &&
-                    payload.state &&
-                    Object.keys(payload.state).length > 0
-                ) {
-                    // Never upload browser defaults over existing server data.
-                    // If backend has a state document, use that saved copy.
-                    const serverState = payload.state;
-                    const completeServerState = {};
- 
-                    PERSISTENT_KEYS.forEach(function (key) {
-                        if (Object.prototype.hasOwnProperty.call(serverState, key)) {
-                            completeServerState[key] = serverState[key];
-                        } else {
-                            // Preserve a missing field from local cache/defaults.
-                            const localValue = parseStoredValue(key);
-                            completeServerState[key] =
-                                localValue !== undefined ? localValue : getDefaultValue(key);
-                        }
-                    });
- 
-                    applyStateToPage(completeServerState);
-                    backendReady = true;
- 
-                    // Only upload if local changes happened while hydration was running.
-                    if (pendingLocalChange) {
-                        pendingLocalChange = false;
-                        queueBackendSave();
-                    }
- 
-                    console.log("TravelEase: Existing saved data loaded.");
-                } else {
-                    // First-time initialization only. This is the only automatic
-                    // browser-to-server migration path.
-                    const initialState = readPersistentState();
-                    if (!validateState(initialState)) {
-                        throw new Error("Local initial data is incomplete; upload cancelled.");
-                    }
- 
-                    backendReady = true;
-                    await sendStateToBackend();
-                    console.log("TravelEase: Initial data uploaded.");
-                }
+                const response = await fetch(API_BASE + "/bookings/" +
+                    encodeURIComponent(item.bookingId) + "/status", {
+                    method: "GET", cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                });
+                if (!response.ok) continue;
+                const latest = await response.json();
+                if (!latest || !latest.ok) continue;
+                item.status = latest.status || item.status;
+                item.paymentStatus = latest.paymentStatus || item.paymentStatus;
+                item.refundStatus = latest.refundStatus || item.refundStatus;
+                if (latest.paymentVerifiedAt) item.paymentVerifiedAt = latest.paymentVerifiedAt;
+                if (latest.refundedAt) item.refundedAt = latest.refundedAt;
+                changed = true;
             } catch (error) {
-                // IMPORTANT: do not push local/default data when GET fails.
-                // This prevents a temporary backend outage from wiping cloud data.
-                backendReady = false;
-                console.error(
-                    "TravelEase: Backend not ready. Local data is kept; cloud sync is paused.",
-                    error
-                );
+                console.warn("TravelEase booking status refresh skipped:", error);
             }
-        })();
- 
-        return hydrationPromise;
+        }
+        if (changed) {
+            originalSetItem.call(localStorage, "bookings", JSON.stringify(localBookings));
+            bookings = localBookings;
+            refreshPage();
+        }
     }
  
-    // Explicit save used by payment submission so the booking reaches MongoDB
-    // before the payment API tries to locate it. It never uploads before hydration.
+    async function hydrateFromBackend(forceRefresh) {
+        if (hydrationPromise && !forceRefresh) return hydrationPromise;
+        hydrationPromise = (async function () {
+            backendReady = false;
+            try {
+                const result = await requestBackendState(), payload = result.payload;
+                if (!payload.initialized || !payload.state) {
+                    if (!result.admin) { console.warn("TravelEase catalogue is not initialized."); return false; }
+                    throw new Error("TravelEase database is not initialized; no browser defaults were uploaded.");
+                }
+                if (result.admin) {
+                    const merged = {};
+                    PERSISTENT_KEYS.forEach(key => {
+                        if (Object.prototype.hasOwnProperty.call(payload.state, key)) merged[key] = payload.state[key];
+                        else {
+                            const local = parseStoredValue(key);
+                            merged[key] = local !== undefined ? local : getDefaultValue(key);
+                        }
+                    });
+                    applyFullState(merged);
+                    backendReady = true;
+                    if (pendingLocalChange) { pendingLocalChange = false; queueBackendSave(); }
+                    console.log("TravelEase protected admin data loaded.");
+                } else {
+                    applyCatalogue(payload.state);
+                    backendReady = false; // no full-state writes from customer/public browsers
+                    console.log("TravelEase public catalogue loaded.");
+                }
+                return true;
+            } catch (error) {
+                backendReady = false;
+                console.error("TravelEase backend hydration failed; local data is retained and cloud sync is paused.", error);
+                return false;
+            }
+        })();
+        return hydrationPromise;
+    }
     window.travelEaseSaveNow = async function () {
+        if (!isAdminSession()) return false;
         await hydrateFromBackend();
         if (!backendReady) return false;
         clearTimeout(syncTimer);
         await syncQueue;
-        await sendStateToBackend();
-        return true;
+        return await sendStateToBackend();
     };
- 
-    // Expose a safe manual retry for troubleshooting from browser console.
+    window.travelEaseRefreshFromBackend = async function () {
+        hydrationPromise = null;
+        return await hydrateFromBackend(true);
+    };
     window.travelEaseRetrySync = async function () {
         hydrationPromise = null;
-        await hydrateFromBackend();
-        if (backendReady) {
-            await syncQueue;
-            await sendStateToBackend();
-            return true;
-        }
-        return false;
+        const ok = await hydrateFromBackend(true);
+        if (!ok || !isAdminSession()) return false;
+        await syncQueue;
+        return await sendStateToBackend();
     };
- 
     if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", hydrateFromBackend, { once: true });
-    } else {
-        hydrateFromBackend();
-    }
- 
-    // Retry only when the browser comes back online; never overwrite data
-    // unless backend hydration succeeds first.
+        document.addEventListener("DOMContentLoaded", () => hydrateFromBackend(), { once: true });
+    } else hydrateFromBackend();
     window.addEventListener("online", function () {
-        if (!backendReady) {
-            hydrationPromise = null;
-            hydrateFromBackend();
-        }
+        if (!backendReady) { hydrationPromise = null; hydrateFromBackend(); }
     });
 })();
- 
 document.addEventListener("DOMContentLoaded", function () {
     const fieldGroups = [
         ["busName", "busFrom", "busTo", "busTime", "busPrice"],
@@ -10812,13 +10680,8 @@ document.addEventListener("DOMContentLoaded", function () {
  
         localStorage.setItem("bookings", JSON.stringify(saved));
         window.bookings = saved;
-        if (typeof window.travelEaseSaveNow === "function") {
-            const ok = await window.travelEaseSaveNow();
-            if (!ok) throw new Error("Cloud database is not ready. Your local data was kept; please retry shortly.");
-        } else {
-            // Older bridge fallback: give its queued save a moment to complete.
-            await new Promise(resolve => setTimeout(resolve, 700));
-        }
+        // Customer browsers cannot upload private full-state data. The payment API
+        // persists this booking on the server together with its UTR submission.
     }
  
     async function teLoadUpiConfig() {
@@ -10921,6 +10784,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     bookingId: booking.bookingId,
                     utr: utr,
                     amount: amount,
+                    booking: booking,
                     customerName: customer.name || booking.customer || "",
                     customerMobile: customer.mobile || customer.phone || ""
                 })
@@ -10936,10 +10800,6 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.setItem("bookings", JSON.stringify(latestBookings));
             window.bookings = latestBookings;
             localStorage.setItem("pendingBooking", JSON.stringify(booking));
-            if (typeof window.travelEaseSaveNow === "function") {
-                await window.travelEaseSaveNow();
-            }
- 
             teSetMessage("UTR submitted successfully. Your booking is still pending and will be confirmed only after the owner verifies the payment.");
             if (button) button.textContent = "Submitted – Awaiting Verification";
             if (utrInput) utrInput.disabled = true;
@@ -10990,7 +10850,6 @@ document.addEventListener("DOMContentLoaded", function () {
             list[index] = booking;
             localStorage.setItem("bookings", JSON.stringify(list));
             window.bookings = list;
-            if (typeof window.travelEaseSaveNow === "function") await window.travelEaseSaveNow();
             alert("Cancellation request sent. The owner must approve it and manually transfer any refund.");
             if (typeof showBookings === "function") showBookings();
             if (typeof renderBookings === "function") renderBookings();
@@ -11074,6 +10933,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({ decision: decision })
             });
             alert(decision === "VERIFY" ? "Payment verified and booking confirmed." : "Payment rejected.");
+            if (typeof window.travelEaseRefreshFromBackend === "function") await window.travelEaseRefreshFromBackend();
             await teLoadAdminPaymentData();
         } catch (error) {
             alert(error.message || "Unable to update payment.");
@@ -11099,6 +10959,7 @@ document.addEventListener("DOMContentLoaded", function () {
             alert(decision === "APPROVE"
                 ? "Refund approved. Transfer the money manually, then record its UTR."
                 : "Refund request rejected.");
+            if (typeof window.travelEaseRefreshFromBackend === "function") await window.travelEaseRefreshFromBackend();
             await teLoadAdminPaymentData();
         } catch (error) {
             alert(error.message || "Unable to update refund request.");
@@ -11124,6 +10985,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 body: JSON.stringify({ refundUtr: utr.trim() })
             });
             alert("Refund marked complete after recording the transfer UTR.");
+            if (typeof window.travelEaseRefreshFromBackend === "function") await window.travelEaseRefreshFromBackend();
             await teLoadAdminPaymentData();
         } catch (error) {
             alert(error.message || "Unable to complete refund.");
