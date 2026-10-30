@@ -1,4 +1,4 @@
-
+ 
 // =========================================
 // DEFAULT BUS DATA
 // =========================================
@@ -10468,6 +10468,25 @@ window.addEventListener(
                 if (latest.paymentVerifiedAt) item.paymentVerifiedAt = latest.paymentVerifiedAt;
                 if (latest.refundedAt) item.refundedAt = latest.refundedAt;
                 changed = true;
+ 
+                // Keep the in-progress payment page in sync as well. Once the
+                // server confirms verification, show a clear success state.
+                if (String(latest.paymentStatus || "").toUpperCase() === "PAID_VERIFIED") {
+                    const pending = parseStoredValue("pendingBooking");
+                    if (pending && String(pending.bookingId) === String(item.bookingId)) {
+                        pending.status = latest.status || "Confirmed";
+                        pending.paymentStatus = "PAID_VERIFIED";
+                        pending.paymentVerifiedAt = latest.paymentVerifiedAt || null;
+                        originalSetItem.call(localStorage, "pendingBooking", JSON.stringify(pending));
+                        const form = document.getElementById("paymentSubmissionForm");
+                        if (form) form.hidden = true;
+                        const message = document.getElementById("paymentMessage");
+                        if (message) {
+                            message.textContent = "Payment successful! Your booking is confirmed.";
+                            message.style.color = "#137333";
+                        }
+                    }
+                }
             } catch (error) {
                 console.warn("TravelEase booking status refresh skipped:", error);
             }
@@ -10538,8 +10557,29 @@ window.addEventListener(
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => hydrateFromBackend(), { once: true });
     } else hydrateFromBackend();
+ 
+    // Customer pages must periodically fetch the authoritative booking/payment
+    // status from the server. Without this call, a locally cached Pending Payment
+    // value can remain visible after the owner verifies the payment.
+    function startCustomerBookingStatusRefresh() {
+        if (isAdminSession()) return;
+        refreshCustomerBookingStatuses();
+        window.setInterval(() => {
+            if (!document.hidden) refreshCustomerBookingStatuses();
+        }, 10000);
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) refreshCustomerBookingStatuses();
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startCustomerBookingStatusRefresh, { once: true });
+    } else {
+        startCustomerBookingStatusRefresh();
+    }
+ 
     window.addEventListener("online", function () {
         if (!backendReady) { hydrationPromise = null; hydrateFromBackend(); }
+        if (!isAdminSession()) refreshCustomerBookingStatuses();
     });
 })();
 document.addEventListener("DOMContentLoaded", function () {
@@ -11004,14 +11044,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById("paymentSubmissionForm")) {
             teLoadUpiConfig();
-            const savedPaymentBooking = teGetJSON("pendingBooking", null);
-            if (savedPaymentBooking && savedPaymentBooking.paymentStatus === "PAYMENT_SUBMITTED") {
-                teStartPaymentApprovalWatch();
-            }
         }
         if (localStorage.getItem("userRole") === "admin") {
             teLoadAdminPaymentData();
         }
     });
 })();
-
