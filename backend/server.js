@@ -1,3 +1,4 @@
+
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
@@ -327,8 +328,16 @@ app.post('/api/auth/admin-login', (req, res) => {
   const username = String(req.body?.username || '');
   const password = String(req.body?.password || '');
  
-  const expectedUser = process.env.ADMIN_USERNAME || 'admin';
-  const expectedPass = process.env.ADMIN_PASSWORD || 'admin123';
+  const expectedUser = String(process.env.ADMIN_USERNAME || '').trim();
+  const expectedPass = String(process.env.ADMIN_PASSWORD || '');
+ 
+  // Fail closed: never allow predictable default owner credentials in production.
+  if (!expectedUser || !expectedPass) {
+    return res.status(503).json({
+      ok: false,
+      message: 'Admin login is not configured. Set ADMIN_USERNAME and ADMIN_PASSWORD in Render.'
+    });
+  }
  
   if (username !== expectedUser || password !== expectedPass) {
     return res.status(401).json({
@@ -490,9 +499,44 @@ app.post('/api/admin/payments/:paymentId/decision', requireAdmin, async (req, re
     if (bookingIndex < 0) return res.status(404).json({ ok: false, message: 'Related booking not found.' });
  
     const booking = { ...bookings[bookingIndex] };
+    const hotels = Array.isArray(state.hotels) ? [...state.hotels] : [];
+    let updatedHotelIndex = -1;
     const now = new Date().toISOString();
  
     if (decision === 'VERIFY') {
+      // Decrease inventory only after an admin independently verifies payment.
+      // Existing hotel bookings store hotelIndex and rooms.
+      if (String(booking.type || '').toLowerCase() === 'hotel') {
+        const hotelIndex = Number(booking.hotelIndex);
+        const rooms = Number(booking.rooms);
+ 
+        if (!Number.isInteger(hotelIndex) || hotelIndex < 0 || hotelIndex >= hotels.length) {
+          return res.status(409).json({
+            ok: false,
+            message: 'Hotel inventory reference is invalid. Booking was not confirmed.'
+          });
+        }
+        if (!Number.isInteger(rooms) || rooms < 1) {
+          return res.status(409).json({
+            ok: false,
+            message: 'Hotel room count is invalid. Booking was not confirmed.'
+          });
+        }
+ 
+        const hotel = { ...hotels[hotelIndex] };
+        const availableRooms = Number(hotel.availableRooms);
+        if (!Number.isFinite(availableRooms) || availableRooms < rooms) {
+          return res.status(409).json({
+            ok: false,
+            message: 'Not enough rooms are available. Booking was not confirmed. Contact the customer to resolve the payment.'
+          });
+        }
+ 
+        hotel.availableRooms = availableRooms - rooms;
+        hotels[hotelIndex] = hotel;
+        updatedHotelIndex = hotelIndex;
+      }
+ 
       // Only the admin decision changes payment to verified / booking to confirmed.
       payment.status = 'PAID_VERIFIED';
       payment.verifiedAt = now;
@@ -511,7 +555,9 @@ app.post('/api/admin/payments/:paymentId/decision', requireAdmin, async (req, re
  
     payments[index] = payment;
     bookings[bookingIndex] = booking;
-    await updateStateKeys({ paymentSubmissions: payments, bookings });
+    const statePatch = { paymentSubmissions: payments, bookings };
+    if (updatedHotelIndex >= 0) statePatch.hotels = hotels;
+    await updateStateKeys(statePatch);
  
     res.json({
       ok: true,
@@ -696,7 +742,7 @@ app.post('/api/admin/refunds/:refundId/complete', requireAdmin, async (req, res)
 // BACKUP
 // ===============================
  
-app.get('/api/backups', async (req, res) => {
+app.get('/api/backups', requireAdmin, async (req, res) => {
   try {
     const state = await getState();
     res.json({
@@ -714,7 +760,7 @@ app.get('/api/backups', async (req, res) => {
 // RESTORE BACKUP
 // ===============================
  
-app.post('/api/backups/restore', async (req, res) => {
+app.post('/api/backups/restore', requireAdmin, async (req, res) => {
   try {
     const state = req.body?.state;
  
