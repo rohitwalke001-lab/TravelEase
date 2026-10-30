@@ -1,274 +1,111 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <title>
-        Login - TravelEase
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Log in to your TravelEase account to manage bookings, discover destinations and plan your next journey.">
+    <meta name="theme-color" content="#ffffff">
+    <title>Login - TravelEase</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body class="auth-page">
-
-
-<nav>
-
-    <a
-        href="index.html"
-        class="logo">
-
+ 
+<nav aria-label="Main navigation">
+    <a href="index.html" class="logo" aria-label="TravelEase home">
         🚌 Travel<span>Ease</span>
-
     </a>
-
-
+ 
     <ul class="nav-links">
-
-        <li>
-            <a href="index.html">
-                Home
-            </a>
-        </li>
-
-        <li>
-            <a href="buses.html">
-                Bus Tickets
-            </a>
-        </li>
-
-        <li>
-            <a href="hotels.html">
-                Hotels
-            </a>
-        </li>
-
-        <li>
-            <a href="destinations.html">
-                Destinations
-            </a>
-        </li>
-
-        <li>
-            <a href="packages.html">
-                Packages
-            </a>
-        </li>
-
+        <li><a href="index.html">Home</a></li>
+        <li><a href="buses.html">Bus Tickets</a></li>
+        <li><a href="hotels.html">Hotels</a></li>
+        <li><a href="destinations.html">Destinations</a></li>
+        <li><a href="packages.html">Packages</a></li>
     </ul>
-
-
-    <div
-        class="nav-buttons"
-        id="navButtons">
-
-    </div>
-
-
+ 
+    <div class="nav-buttons" id="navButtons"></div>
 </nav>
-
-
-
-<section class="auth-container">
-
-
+ 
+<main>
+<section class="auth-container" aria-label="TravelEase account login">
+ 
     <!-- LEFT SIDE -->
-
     <div class="auth-welcome">
-
-
-        <div class="auth-icon">
-
-            ✈️
-
-        </div>
-
-
-        <p class="auth-small-title">
-
-            WELCOME BACK
-
-        </p>
-
-
-        <h1>
-
-            Your Next Adventure
-            Starts Here
-
-        </h1>
-
-
+        <div class="auth-icon" aria-hidden="true">✈️</div>
+ 
+        <p class="auth-small-title">WELCOME BACK</p>
+ 
+        <h1>Your Next Adventure Starts Here</h1>
+ 
         <p>
-
             Login to manage your bookings,
             discover amazing destinations and
             plan unforgettable journeys.
-
         </p>
-
-
+ 
         <div class="auth-features">
-
-
-            <div>
-
-                🚌 Easy Bus Booking
-
-            </div>
-
-
-            <div>
-
-                🏨 Best Hotels
-
-            </div>
-
-
-            <div>
-
-                🎁 Travel Packages
-
-            </div>
-
-
+            <div>🚌 Easy Bus Booking</div>
+            <div>🏨 Best Hotels</div>
+            <div>🎁 Travel Packages</div>
         </div>
-
-
     </div>
-
-
-
+ 
     <!-- RIGHT SIDE LOGIN -->
-
     <div class="auth-box">
-
-
         <div class="auth-box-header">
-
-            <div class="auth-form-icon">
-
-                🔐
-
-            </div>
-
-
-            <h2>
-
-                Welcome Back!
-
-            </h2>
-
-
-            <p>
-
-                Login to your TravelEase account
-
-            </p>
-
-
+            <div class="auth-form-icon" aria-hidden="true">🔐</div>
+ 
+            <h2>Welcome Back!</h2>
+ 
+            <p>Login to your TravelEase account</p>
         </div>
-
-
-
-        <div class="auth-form">
-
-
-            <label>
-
-                Email Address
-
-            </label>
-
-
+ 
+        <form class="auth-form" id="loginForm" onsubmit="event.preventDefault(); loginUser();">
+            <label for="email">Email Address</label>
             <input
                 type="email"
                 id="email"
-                placeholder="Enter your email">
-
-
-
-            <label>
-
-                Password
-
-            </label>
-
-
+                name="email"
+                placeholder="Enter your email"
+                autocomplete="username"
+                inputmode="email"
+                maxlength="254"
+                required>
+ 
+            <label for="password">Password</label>
             <input
                 type="password"
                 id="password"
-                placeholder="Enter your password">
-
-
-
-            <button
-                class="auth-btn"
-                onclick="loginUser()">
-
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required>
+ 
+            <button type="submit" class="auth-btn">
                 Login
-
-                <span>
-
-                    →
-
-                </span>
-
+                <span aria-hidden="true">→</span>
             </button>
-
-
+ 
+            <p id="loginMessage" class="auth-message" role="status" aria-live="polite"></p>
+ 
             <div class="auth-divider">
-
-                <span>
-
-                    New to TravelEase?
-
-                </span>
-
+                <span>New to TravelEase?</span>
             </div>
-
-
-            <a
-                href="register.html"
-                class="auth-register-link">
-
+ 
+            <a href="register.html" class="auth-register-link">
                 Create New Account
-
             </a>
-
-
-            <a
-                href="admin-login.html"
-                class="admin-login-link">
-
+ 
+            <a href="admin-login.html" class="admin-login-link">
                 👨‍💼 Login as Admin
-
             </a>
-
-
-        </div>
-
-
+        </form>
     </div>
-
-
+ 
 </section>
-
-
+</main>
+ 
 <script src="script.js"></script>
-
-
 </body>
-
 </html>
