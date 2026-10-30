@@ -354,6 +354,27 @@ app.put('/api/state', requireAdmin, async (req, res) => {
       }
     }
  
+    // Payment verification is authoritative. A stale admin browser tab must
+    // never overwrite a booking's verified payment / confirmation status.
+    if (Array.isArray(current?.bookings) && Array.isArray(state.bookings)) {
+      const authoritative = new Map(current.bookings
+        .filter(item => item && (item.bookingId || item.id || item._id))
+        .map(item => [String(item.bookingId || item.id || item._id), item]));
+      state.bookings = state.bookings.map(item => {
+        if (!item) return item;
+        const id = String(item.bookingId || item.id || item._id || '');
+        const saved = authoritative.get(id);
+        if (!saved || String(saved.paymentStatus || '').toUpperCase() !== 'PAID_VERIFIED') return item;
+        return {
+          ...item,
+          paymentStatus: saved.paymentStatus,
+          status: saved.status || 'Confirmed',
+          paymentVerifiedAt: saved.paymentVerifiedAt || item.paymentVerifiedAt,
+          paymentReference: saved.paymentReference || item.paymentReference
+        };
+      });
+    }
+
     await saveState(state);
     res.json({ ok: true, state });
   } catch (err) {
@@ -904,3 +925,4 @@ connectMongo().finally(() => {
     console.log(`TravelEase running on http://localhost:${PORT}`);
   });
 });
+
