@@ -20,7 +20,19 @@ const UPI_PAYEE_NAME = String(process.env.OWNER_UPI_NAME || 'TravelEase').trim()
  
 // IMPORTANT: Keep the existing MongoDB state document and its existing keys.
 // Payment records are stored as additional keys in the same state document.
-app.use(cors());
+const allowedOrigins = new Set([
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  ...(String(process.env.FRONTEND_ORIGIN || '').split(',').map(value => value.trim()).filter(Boolean))
+]);
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origin not allowed by TravelEase API CORS policy.'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
  
@@ -323,15 +335,19 @@ app.put('/api/state', requireAdmin, async (req, res) => {
     ];
  
     const current = await getState();
+    let state;
     if (!current || typeof current !== 'object' || Array.isArray(current)) {
-      return res.status(409).json({
-        message: 'TravelEase state is not initialized. Save stopped to protect existing data.'
-      });
+      const requiredArrays = ['buses', 'hotels', 'packages', 'destinations', 'bookings', 'users'];
+      if (!requiredArrays.every(key => Array.isArray(req.body[key]))) {
+        return res.status(409).json({
+          message: 'TravelEase state is not initialized. Complete initial data is required; nothing was changed.'
+        });
+      }
+      state = { paymentSubmissions: [], refundRequests: [], ownerRevenue: 0, ...req.body };
+    } else {
+      // Preserve payment/refund records and every unknown key.
+      state = { ...current };
     }
- 
-    // Merge accepted frontend keys into the existing state. Payment/refund keys
-    // and any future keys are preserved if an older frontend does not send them.
-    const state = { ...current };
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(req.body, key)) {
         state[key] = req.body[key];
@@ -430,13 +446,39 @@ app.post('/api/payments/submit', async (req, res) => {
       return res.status(409).json({ ok: false, message: 'Booking data is not available. Please contact the owner.' });
     }
  
-    const bookingIndex = findBookingIndex(current.bookings, bookingId);
+    const bookings = [...current.bookings];
+    let bookingIndex = findBookingIndex(bookings, bookingId);
+    let booking;
+ 
     if (bookingIndex < 0) {
-      return res.status(404).json({ ok: false, message: 'Booking not found.' });
+      // Create the customer booking on the server; customers cannot upload full private state.
+      const submitted = req.body?.booking;
+      if (!submitted || typeof submitted !== 'object' || Array.isArray(submitted) ||
+          String(submitted.bookingId || '') !== bookingId) {
+        return res.status(404).json({ ok: false, message: 'Booking not found. Please restart the booking process.' });
+      }
+ 
+      const customer = cleanText(submitted.customer, 120);
+      const type = cleanText(submitted.type, 30);
+      const name = cleanText(submitted.name, 120);
+      const price = Number(submitted.price);
+      if (!customer || !customer.includes('@') || !type || !name ||
+          !Number.isFinite(price) || price <= 0 || Math.abs(price - amount) > 0.01) {
+        return res.status(400).json({ ok: false, message: 'Booking details or amount are invalid.' });
+      }
+ 
+      booking = { ...submitted, bookingId, customer, type, name, price,
+        status: 'Pending Payment', paymentStatus: 'PAYMENT_SUBMITTED' };
+      bookingIndex = bookings.length;
+      bookings.push(booking);
+    } else {
+      booking = { ...bookings[bookingIndex] };
+      const expectedAmount = Number(booking.totalAmount || booking.amount || booking.price);
+      if (!Number.isFinite(expectedAmount) || Math.abs(expectedAmount - amount) > 0.01) {
+        return res.status(409).json({ ok: false, message: 'Submitted amount does not match the saved booking.' });
+      }
     }
  
-    const bookings = [...current.bookings];
-    const booking = { ...bookings[bookingIndex] };
     const existingPayments = Array.isArray(current.paymentSubmissions) ? current.paymentSubmissions : [];
  
     const duplicateUtr = existingPayments.some(p =>
@@ -593,6 +635,34 @@ app.post('/api/admin/payments/:paymentId/decision', requireAdmin, async (req, re
   } catch (err) {
     console.error('Payment decision failed:', err.message);
     res.status(500).json({ ok: false, message: 'Unable to update payment status.' });
+  }
+});
+ 
+// ===============================
+// CUSTOMER: READ BOOKING STATUS ONLY
+// Returns no customer contact details or payment UTR.
+// ===============================
+app.get('/api/bookings/:bookingId/status', async (req, res) => {
+  try {
+    const bookingId = cleanText(req.params.bookingId, 100);
+    const state = await getState();
+    const list = Array.isArray(state?.bookings) ? state.bookings : [];
+    const index = findBookingIndex(list, bookingId);
+    if (index < 0) return res.status(404).json({ ok: false, message: 'Booking not found.' });
+    const booking = list[index];
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      ok: true,
+      bookingId,
+      status: cleanText(booking.status, 40),
+      paymentStatus: cleanText(booking.paymentStatus, 40),
+      refundStatus: cleanText(booking.refundStatus, 40),
+      paymentVerifiedAt: booking.paymentVerifiedAt || null,
+      refundedAt: booking.refundedAt || null
+    });
+  } catch (err) {
+    console.error('Booking status lookup failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to load booking status.' });
   }
 });
  
