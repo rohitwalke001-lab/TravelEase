@@ -263,9 +263,35 @@ app.get('/api/health', (req, res) => {
 // GET COMPLETE STATE
 // ===============================
  
-app.get('/api/state', async (req, res) => {
+// Public read-only catalogue. Never expose customer accounts, bookings, or revenue.
+app.get('/api/public/state', async (req, res) => {
   try {
     const state = await getState();
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      return res.json({ initialized: false, state: null });
+    }
+ 
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      initialized: true,
+      state: {
+        buses: Array.isArray(state.buses) ? state.buses : [],
+        hotels: Array.isArray(state.hotels) ? state.hotels : [],
+        packages: Array.isArray(state.packages) ? state.packages : [],
+        destinations: Array.isArray(state.destinations) ? state.destinations : []
+      }
+    });
+  } catch (err) {
+    console.error('TravelEase public catalogue load error:', err.message);
+    res.status(500).json({ message: 'Unable to load TravelEase catalogue.' });
+  }
+});
+ 
+// Full state contains customer data and is restricted to authenticated admins.
+app.get('/api/state', requireAdmin, async (req, res) => {
+  try {
+    const state = await getState();
+    res.set('Cache-Control', 'no-store');
     res.json({
       initialized: !!state,
       state: state || null
@@ -280,7 +306,7 @@ app.get('/api/state', async (req, res) => {
 // SAVE COMPLETE STATE
 // ===============================
  
-app.put('/api/state', async (req, res) => {
+app.put('/api/state', requireAdmin, async (req, res) => {
   try {
     if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
       return res.status(400).json({ message: 'Invalid state payload.' });
