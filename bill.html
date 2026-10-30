@@ -1,81 +1,63 @@
+
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
-    <title>TravelEase Bill</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TravelEase booking bill and payment status">
+    <title>TravelEase - Booking Bill</title>
     <link rel="stylesheet" href="style.css">
-
-    
 </head>
-
+ 
 <body>
-
     <nav>
-
         <h2>🚌 TravelEase</h2>
-
     </nav>
-
-
-    <div class="bill-page">
-
-        <div class="bill-header">
-
-            <h1>Booking Confirmation</h1>
-
-            <p>Your travel booking has been successfully confirmed!</p>
-
-        </div>
-
-
-        <div
+ 
+    <main class="bill-page">
+        <section class="bill-header" aria-labelledby="billTitle">
+            <h1 id="billTitle">Booking Receipt</h1>
+            <p id="billStatusMessage" role="status" aria-live="polite">
+                Your booking details are shown below. Please check the payment status.
+            </p>
+        </section>
+ 
+        <section
             id="billContent"
             class="bill-container"
+            aria-label="Booking and payment details"
+            aria-live="polite"
         >
-
-        </div>
-
-
+            <p>Loading your booking details...</p>
+        </section>
+ 
         <div class="bill-buttons">
-
             <button
+                type="button"
                 class="primary-btn"
                 onclick="printBill()"
             >
-
                 🖨️ Print Bill
-
             </button>
-
-
+ 
             <button
+                type="button"
                 class="secondary-btn"
                 onclick="window.location.href='bookings.html'"
             >
-
                 📋 My Bookings
-
             </button>
-
-
+ 
             <button
+                type="button"
                 class="secondary-btn"
                 onclick="window.location.href='index.html'"
             >
-
                 🏠 Back To Home
-
             </button>
-
         </div>
-
-    </div>
-
-
+    </main>
+ 
     <script src="script.js"></script>
-
 </body>
-
 </html>
