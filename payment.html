@@ -1,46 +1,51 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Submit your TravelEase booking payment UTR for secure manual verification.">
+    <meta name="theme-color" content="#ffffff">
     <title>Payment - TravelEase</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav>
-        <div class="logo">🚌 TravelEase</div>
+ 
+    <nav aria-label="Main navigation">
+        <a href="index.html" class="logo" aria-label="TravelEase home">🚌 TravelEase</a>
     </nav>
  
     <main class="payment-page">
-        <section class="payment-container">
-            <h1>💳 Complete Payment</h1>
+        <section class="payment-container" aria-labelledby="paymentHeading">
+            <h1 id="paymentHeading">💳 Complete Payment</h1>
             <p class="payment-subtitle">
                 Pay using your UPI app and submit the UTR for verification.
             </p>
  
-            <div id="paymentDetails" class="payment-details" aria-live="polite">
+            <div id="paymentDetails" class="payment-details" aria-live="polite" aria-atomic="true">
                 <!-- Booking details are loaded by script.js -->
             </div>
  
             <section class="upi-payment-section" aria-labelledby="upiHeading">
-                <h3 id="upiHeading">Pay using UPI</h3>
+                <h2 id="upiHeading">Pay using UPI</h2>
                 <p>
                     Use the UPI app on your phone, or scan the QR code if it is displayed.
                     Complete the payment in your UPI app.
                 </p>
  
-                <div id="upiPaymentInfo" class="upi-payment-info" aria-live="polite">
+                <div id="upiPaymentInfo" class="upi-payment-info" aria-live="polite" aria-atomic="true">
                     <!-- UPI ID and payment QR are inserted by script.js -->
                 </div>
  
-                <div id="upiQrContainer" class="upi-qr-container">
+                <div id="upiQrContainer" class="upi-qr-container" aria-label="UPI payment QR code">
                     <!-- QR code is inserted by script.js when available -->
                 </div>
  
                 <a id="openUpiApp"
                    class="primary-btn"
                    href="#"
-                   hidden>
+                   hidden
+                   rel="noopener">
                     Open UPI App
                 </a>
             </section>
@@ -55,10 +60,13 @@
                     minlength="6"
                     maxlength="40"
                     autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                    aria-describedby="utrHelp"
                     required
                 >
  
-                <p class="payment-verification-note">
+                <p id="utrHelp" class="payment-verification-note">
                     Your booking will remain pending until the owner verifies the payment.
                     Submitting a UTR does not automatically confirm your booking.
                 </p>
@@ -71,7 +79,7 @@
                 </button>
             </form>
  
-            <p id="paymentMessage" role="status" aria-live="polite"></p>
+            <p id="paymentMessage" role="status" aria-live="polite" aria-atomic="true"></p>
  
             <p class="demo-payment-text">
                 🔒 Pay only to the UPI details shown on this page. Do not share your UPI PIN
