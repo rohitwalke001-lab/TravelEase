@@ -6,7 +6,7 @@ The original frontend files are preserved in their existing structure and stylin
 
 1. Install Node.js 18+.
 2. Open terminal in `backend`.
-3. Run `npm install`.
+3. Run `npm install`. 
 4. Copy `.env.example` to `.env`.
 5. Add your MongoDB Atlas connection string to `MONGO_URI` if you want MongoDB persistence. If it is blank/unavailable, the server uses `backend/data/state.json` as a local fallback.
 6. Run `npm start`.
