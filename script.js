@@ -1,3 +1,4 @@
+
 // =========================================
 // DEFAULT BUS DATA
 // =========================================
@@ -743,91 +744,6 @@ function loadBusBooking() {
 // =========================================
  
 function confirmBusBooking() {
- 
-    let bus =
-    JSON.parse(
-        localStorage.getItem("selectedBus")
-    );
- 
- 
-    let date =
-    document.getElementById("travelDate");
- 
-    let passengers =
-    document.getElementById("passengers");
- 
- 
-    if (
-        !bus ||
-        !date ||
-        !passengers
-    ) {
- 
-        return;
- 
-    }
- 
- 
-    if (
-        !date.value ||
-        !passengers.value
-    ) {
- 
-        alert(
-            "Please select date and passengers!"
-        );
- 
-        return;
- 
-    }
- 
- 
-    let total =
-    bus.price *
-    Number(passengers.value);
- 
- 
-    let booking = {
- 
-        customer:
-        localStorage.getItem("currentUser"),
- 
-        type:
-        "Bus",
- 
-        name:
-        bus.name,
- 
-        location:
-        bus.from +
-        " → " +
-        bus.to,
- 
-        date:
-        date.value,
- 
-        passengers:
-        passengers.value,
- 
-        price:
-        total,
- 
-        status:
-        "Pending Payment"
- 
-    };
- 
- 
-    localStorage.setItem(
-        "pendingBooking",
-        JSON.stringify(booking)
-    );
- 
- 
-    window.location.href =
-    "payment.html";
- 
-}function confirmBusBooking() {
  
     let bus =
     JSON.parse(
@@ -2594,86 +2510,112 @@ function processPayment() {
  
  
 // =========================================
+// =========================================
+// CUSTOMER PASSWORD HELPERS
+// Passwords are hashed with PBKDF2 before they are stored in localStorage.
+// This is a client-side improvement, not a substitute for server-side auth.
+// =========================================
+ 
+async function hashCustomerPassword(password, saltBase64) {
+    if (!window.crypto || !window.crypto.subtle) {
+        throw new Error("Secure password storage requires HTTPS or a supported secure browser.");
+    }
+ 
+    const encoder = new TextEncoder();
+    const salt = saltBase64
+        ? Uint8Array.from(atob(saltBase64), char => char.charCodeAt(0))
+        : window.crypto.getRandomValues(new Uint8Array(16));
+ 
+    const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        encoder.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveBits"]
+    );
+ 
+    const derivedBits = await window.crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: 210000,
+            hash: "SHA-256"
+        },
+        keyMaterial,
+        256
+    );
+ 
+    const hashBytes = new Uint8Array(derivedBits);
+    const hashBase64 = btoa(String.fromCharCode.apply(null, hashBytes));
+    const saltEncoded = btoa(String.fromCharCode.apply(null, salt));
+ 
+    return { passwordHash: hashBase64, passwordSalt: saltEncoded };
+}
+ 
+async function verifyCustomerPassword(password, user) {
+    if (user.passwordHash && user.passwordSalt) {
+        const calculated = await hashCustomerPassword(password, user.passwordSalt);
+        return calculated.passwordHash === user.passwordHash;
+    }
+ 
+    // One-time compatibility for old accounts that stored plaintext passwords.
+    // A successful login immediately upgrades that record to PBKDF2.
+    return typeof user.password === "string" && user.password === password;
+}
+ 
+ 
+// =========================================
 // REGISTER USER
 // =========================================
  
-function registerUser() {
+async function registerUser() {
+    const nameField = document.getElementById("name");
+    const emailField = document.getElementById("email");
+    const passwordField = document.getElementById("password");
  
-    let name =
-    document.getElementById("name").value.trim();
+    const name = nameField ? nameField.value.trim() : "";
+    const email = emailField ? emailField.value.trim().toLowerCase() : "";
+    const password = passwordField ? passwordField.value.trim() : "";
  
-    let email =
-    document.getElementById("email").value.trim();
- 
-    let password =
-    document.getElementById("password").value.trim();
- 
- 
-    if (
-        !name ||
-        !email ||
-        !password
-    ) {
- 
-        alert(
-            "Please fill all fields!"
-        );
- 
+    if (!name || !email || !password) {
+        alert("Please fill all fields!");
         return;
- 
     }
  
- 
-    let users =
-    JSON.parse(
-        localStorage.getItem("users")
-    ) || [];
- 
- 
-    let existingUser =
-    users.find(function(user) {
- 
-        return (
-            user.email === email
-        );
- 
-    });
- 
- 
-    if (existingUser) {
- 
-        alert(
-            "Email already registered!"
-        );
- 
+    if (password.length < 8) {
+        alert("Please use a password with at least 8 characters.");
         return;
- 
     }
  
+    try {
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        const existingUser = users.find(user =>
+            user && String(user.email || "").toLowerCase() === email
+        );
  
-    users.push({
-    name: name,
-    email: email,
-    password: password,
-    role: "customer",
-    balance: 0
-    });
+        if (existingUser) {
+            alert("Email already registered!");
+            return;
+        }
  
+        const passwordData = await hashCustomerPassword(password);
  
-    localStorage.setItem(
-        "users",
-        JSON.stringify(users)
-    );
+        users.push({
+            name: name,
+            email: email,
+            passwordHash: passwordData.passwordHash,
+            passwordSalt: passwordData.passwordSalt,
+            role: "customer",
+            balance: 0
+        });
  
+        localStorage.setItem("users", JSON.stringify(users));
  
-    alert(
-        "Registration successful!"
-    );
- 
- 
-    window.location.href =
-    "login.html";
- 
+        alert("Registration successful!");
+        window.location.href = "login.html";
+    } catch (error) {
+        alert(error.message || "Unable to register securely. Please try again.");
+    }
 }
  
  
@@ -2681,70 +2623,49 @@ function registerUser() {
 // CUSTOMER LOGIN
 // =========================================
  
-function loginUser() {
+async function loginUser() {
+    const emailField = document.getElementById("email");
+    const passwordField = document.getElementById("password");
  
-    let email =
-    document.getElementById("email").value.trim();
+    const email = emailField ? emailField.value.trim().toLowerCase() : "";
+    const password = passwordField ? passwordField.value.trim() : "";
  
-    let password =
-    document.getElementById("password").value.trim();
- 
- 
-    let users =
-    JSON.parse(
-        localStorage.getItem("users")
-    ) || [];
- 
- 
-    let user =
-    users.find(function(item) {
- 
-        return (
- 
-            item.email === email &&
- 
-            item.password === password
- 
-        );
- 
-    });
- 
- 
-    if (user) {
- 
-        localStorage.setItem(
-            "currentUser",
-            user.email
-        );
- 
- 
-        localStorage.setItem(
-            "userRole",
-            "customer"
-        );
- 
- 
-        alert(
-            "Login successful!"
-        );
- 
- 
-        window.location.href =
-        "index.html";
- 
+    if (!email || !password) {
+        alert("Please enter email and password.");
+        return;
     }
  
-    else {
- 
-        alert(
-            "Invalid email or password!"
+    try {
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        const user = users.find(item =>
+            item && String(item.email || "").toLowerCase() === email
         );
  
-    }
+        if (!user || !(await verifyCustomerPassword(password, user))) {
+            alert("Invalid email or password!");
+            return;
+        }
  
+        if (!user.passwordHash || !user.passwordSalt) {
+            const upgraded = await hashCustomerPassword(password);
+            user.passwordHash = upgraded.passwordHash;
+            user.passwordSalt = upgraded.passwordSalt;
+            delete user.password;
+            localStorage.setItem("users", JSON.stringify(users));
+        }
+ 
+        localStorage.setItem("currentUser", user.email);
+        localStorage.setItem("userRole", "customer");
+ 
+        alert("Login successful!");
+        window.location.href = "index.html";
+    } catch (error) {
+        alert(error.message || "Unable to log in. Please try again.");
+    }
 }
  
  
+// =========================================
 // =========================================
 // ADMIN LOGIN
 // =========================================
