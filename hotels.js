@@ -442,7 +442,7 @@ function confirmHotelBooking() {
         "\nHotel: " +
         selectedHotel +
 
-        "\nRoom: " +
+        "\nRoom: " + 
         selectedRoom +
 
         "\nPrice: ₹" +
