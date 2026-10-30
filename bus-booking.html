@@ -1,139 +1,119 @@
+
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
+ 
 <head>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete your TravelEase bus booking with passenger and travel details.">
     <title>Book Bus - TravelEase</title>
-
     <link rel="stylesheet" href="style.css">
-
 </head>
-
+ 
 <body>
-
-    <nav>
-
+ 
+    <nav aria-label="Main navigation">
         <h2>🚌 TravelEase</h2>
-
-        <a href="buses.html">
+        <a href="buses.html" aria-label="Back to bus listings">
             ← Back
         </a>
-
     </nav>
-
-
-    <div class="booking-page">
-
-        <div class="booking-title">
-
+ 
+    <main class="booking-page">
+ 
+        <header class="booking-title">
             <h1>🚌 Complete Your Bus Booking</h1>
-
             <p>
-                Enter your travel details and confirm your booking.
+                Enter your travel details and passenger information to continue.
             </p>
-
-        </div>
-
-
+        </header>
+ 
         <div class="booking-layout">
-
-
-            <div
+ 
+            <section
                 id="selectedBusDetails"
                 class="booking-details-box"
+                aria-label="Selected bus details"
+                aria-live="polite"
             >
-
-            </div>
-
-
-            <div class="booking-form-box">
-
-                <h2>Passenger Details</h2>
-
-
-                <label>
+                <p>Loading selected bus details...</p>
+            </section>
+ 
+            <section class="booking-form-box" aria-labelledby="passengerDetailsTitle">
+                <h2 id="passengerDetailsTitle">Passenger Details</h2>
+ 
+                <label for="travelDate">
                     Travel Date
                 </label>
-
+ 
                 <input
                     type="date"
                     id="travelDate"
+                    name="travelDate"
                     required
+                    aria-required="true"
                 >
-
-
-                <label>
+ 
+                <label for="passengers">
                     Number of Passengers
                 </label>
-
+ 
                 <input
                     type="number"
                     id="passengers"
+                    name="passengers"
                     min="1"
+                    step="1"
+                    inputmode="numeric"
                     placeholder="Enter number of passengers"
                     required
+                    aria-required="true"
                 >
-
-
+ 
                 <button
+                    type="button"
                     class="primary-btn booking-confirm-btn"
                     onclick="confirmBusBooking()"
                 >
-
-                    ✅ Confirm Booking
-
+                    ✅ Continue Booking
                 </button>
-
-            </div>
-
-
+ 
+                <p class="booking-form-note" role="note">
+                    Your booking is not confirmed until the required payment
+                    has been submitted and verified by the TravelEase admin.
+                </p>
+            </section>
+ 
         </div>
-
-    </div>
-
-
+ 
+    </main>
+ 
     <script src="script.js"></script>
-
-
-    <!-- PREVENT PAST DATE SELECTION -->
-
+ 
+    <!-- Prevent past date selection -->
     <script>
-
-        let today = new Date();
-
-        let year = today.getFullYear();
-
-        let month = String(
-            today.getMonth() + 1
-        ).padStart(2, "0");
-
-        let day = String(
-            today.getDate()
-        ).padStart(2, "0");
-
-
-        let minDate =
-            year + "-" +
-            month + "-" +
-            day;
-
-
-        let travelDate =
-            document.getElementById(
-                "travelDate"
-            );
-
-
-        // Prevent selecting past dates
-        travelDate.min = minDate;
-
-
-        // Set today's date by default
-        travelDate.value = minDate;
-
+        (function () {
+            const dateInput = document.getElementById("travelDate");
+ 
+            if (!dateInput) {
+                return;
+            }
+ 
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, "0");
+            const day = String(today.getDate()).padStart(2, "0");
+ 
+            const minDate = `${year}-${month}-${day}`;
+ 
+            dateInput.min = minDate;
+ 
+            // Keep a valid date already selected by the user.
+            if (!dateInput.value || dateInput.value < minDate) {
+                dateInput.value = minDate;
+            }
+        })();
     </script>
-
-
+ 
 </body>
-
 </html>
