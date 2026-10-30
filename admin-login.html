@@ -1,188 +1,84 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0">
-
-    <title>
-        Admin Login - TravelEase
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Secure TravelEase administrator login portal for managing travel services and bookings.">
+    <meta name="theme-color" content="#ffffff">
+    <title>Admin Login - TravelEase</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body class="auth-page">
-
-
-<nav>
-
-    <a
-        href="index.html"
-        class="logo">
-
+ 
+<nav aria-label="Main navigation">
+    <a href="index.html" class="logo" aria-label="TravelEase home">
         🚌 Travel<span>Ease</span>
-
     </a>
-
-
+ 
     <ul class="nav-links">
-
-        <li>
-            <a href="index.html">
-                Home
-            </a>
-        </li>
-
-        <li>
-            <a href="buses.html">
-                Bus Tickets
-            </a>
-        </li>
-
-        <li>
-            <a href="hotels.html">
-                Hotels
-            </a>
-        </li>
-
-        <li>
-            <a href="destinations.html">
-                Destinations
-            </a>
-        </li>
-
-        <li>
-            <a href="packages.html">
-                Packages
-            </a>
-        </li>
-
+        <li><a href="index.html">Home</a></li>
+        <li><a href="buses.html">Bus Tickets</a></li>
+        <li><a href="hotels.html">Hotels</a></li>
+        <li><a href="destinations.html">Destinations</a></li>
+        <li><a href="packages.html">Packages</a></li>
     </ul>
-
-
 </nav>
-
-
-
-<section class="admin-auth-container">
-
-
+ 
+<main>
+<section class="admin-auth-container" aria-label="TravelEase administrator sign in">
+ 
     <div class="admin-login-box">
-
-
-        <div class="admin-icon">
-
-            👨‍💼
-
-        </div>
-
-
-        <p class="auth-small-title">
-
-            TRAVELEASE ADMIN
-
-        </p>
-
-
-        <h1>
-
-            Admin Portal
-
-        </h1>
-
-
+        <div class="admin-icon" aria-hidden="true">👨‍💼</div>
+ 
+        <p class="auth-small-title">TRAVELEASE ADMIN</p>
+ 
+        <h1>Admin Portal</h1>
+ 
         <p class="admin-description">
-
             Login to manage buses, hotels,
             packages, destinations and bookings.
-
         </p>
-
-
-
-        <div class="auth-form">
-
-
-            <label>
-
-                Username
-
-            </label>
-
-
+ 
+        <form class="auth-form" id="adminLoginForm" onsubmit="event.preventDefault(); adminLogin();">
+            <label for="username">Username</label>
             <input
                 type="text"
                 id="username"
-                placeholder="Enter admin username">
-
-
-
-            <label>
-
-                Password
-
-            </label>
-
-
+                name="username"
+                placeholder="Enter admin username"
+                autocomplete="username"
+                required>
+ 
+            <label for="password">Password</label>
             <input
                 type="password"
                 id="password"
-                placeholder="Enter password">
-
-
-
-            <button
-                class="auth-btn"
-                onclick="adminLogin()">
-
+                name="password"
+                placeholder="Enter password"
+                autocomplete="current-password"
+                required>
+ 
+            <button type="submit" class="auth-btn">
                 Access Dashboard
-
-                <span>
-
-                    →
-
-                </span>
-
+                <span aria-hidden="true">→</span>
             </button>
-
-
-            <a
-                href="login.html"
-                class="admin-back-link">
-
+ 
+            <p id="adminLoginMessage" class="auth-message" role="status" aria-live="polite"></p>
+ 
+            <a href="login.html" class="admin-back-link">
                 ← Back to Customer Login
-
             </a>
-
-
-        </div>
-
-
+        </form>
+ 
         <div class="admin-security">
-
             🔒 Secure Admin Access
-
         </div>
-
-
     </div>
-
-
+ 
 </section>
-
-
+</main>
+ 
 <script src="script.js"></script>
-
-
 </body>
-
 </html>
