@@ -1,242 +1,174 @@
+
 <!DOCTYPE html>
-
-<html>
-
+<html lang="en">
+ 
 <head>
-
-```
-<title>Book Hotel - TravelEase</title>
-
-<link rel="stylesheet" href="style.css">
-```
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Complete your TravelEase hotel booking with check-in, check-out and guest details.">
+    <title>Book Hotel - TravelEase</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
+ 
 <body>
-
-```
-<nav>
-
-    <h2>🚌 TravelEase</h2>
-
-    <a href="hotels.html">
-        ← Back
-    </a>
-
-</nav>
-
-
-<div class="booking-page">
-
-    <div class="booking-title">
-
-        <h1>🏨 Complete Your Hotel Booking</h1>
-
-        <p>
-            Select your stay details and confirm your hotel booking.
-        </p>
-
-    </div>
-
-
-    <div class="booking-layout">
-
-
-        <div
-            id="selectedHotelDetails"
-            class="booking-details-box"
-        >
-
+ 
+    <nav aria-label="Main navigation">
+        <h2>🚌 TravelEase</h2>
+        <a href="hotels.html" aria-label="Back to hotel listings">
+            ← Back
+        </a>
+    </nav>
+ 
+    <main class="booking-page">
+ 
+        <header class="booking-title">
+            <h1>🏨 Complete Your Hotel Booking</h1>
+            <p>
+                Select your stay details and continue with your hotel booking.
+            </p>
+        </header>
+ 
+        <div class="booking-layout">
+ 
+            <section
+                id="selectedHotelDetails"
+                class="booking-details-box"
+                aria-label="Selected hotel details"
+                aria-live="polite"
+            >
+                <p>Loading selected hotel details...</p>
+            </section>
+ 
+            <section class="booking-form-box" aria-labelledby="stayDetailsTitle">
+                <h2 id="stayDetailsTitle">Stay Details</h2>
+ 
+                <label for="checkIn">
+                    Check-In Date
+                </label>
+ 
+                <input
+                    type="date"
+                    id="checkIn"
+                    name="checkIn"
+                    required
+                    aria-required="true"
+                >
+ 
+                <label for="checkOut">
+                    Check-Out Date
+                </label>
+ 
+                <input
+                    type="date"
+                    id="checkOut"
+                    name="checkOut"
+                    required
+                    aria-required="true"
+                >
+ 
+                <label for="rooms">
+                    Number of Rooms
+                </label>
+ 
+                <input
+                    type="number"
+                    id="rooms"
+                    name="rooms"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Enter number of rooms"
+                    required
+                    aria-required="true"
+                >
+ 
+                <label for="guests">
+                    Number of Guests
+                </label>
+ 
+                <input
+                    type="number"
+                    id="guests"
+                    name="guests"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Enter number of guests"
+                    required
+                    aria-required="true"
+                >
+ 
+                <button
+                    type="button"
+                    class="primary-btn booking-confirm-btn"
+                    onclick="confirmHotelBooking()"
+                >
+                    ✅ Continue Hotel Booking
+                </button>
+ 
+                <p class="booking-form-note" role="note">
+                    Your booking is not confirmed until the required payment
+                    has been submitted and verified by the TravelEase admin.
+                </p>
+            </section>
+ 
         </div>
-
-
-        <div class="booking-form-box">
-
-            <h2>Stay Details</h2>
-
-
-            <label>
-                Check-In Date
-            </label>
-
-            <input
-                type="date"
-                id="checkIn"
-                required
-            >
-
-
-            <label>
-                Check-Out Date
-            </label>
-
-            <input
-                type="date"
-                id="checkOut"
-                required
-            >
-
-
-            <label>
-                Number of Rooms
-            </label>
-
-            <input
-                type="number"
-                id="rooms"
-                min="1"
-                placeholder="Enter number of rooms"
-                required
-            >
-
-
-            <label>
-                Number of Guests
-            </label>
-
-            <input
-                type="number"
-                id="guests"
-                min="1"
-                placeholder="Enter number of guests"
-                required
-            >
-
-
-            <button
-                class="primary-btn booking-confirm-btn"
-                onclick="confirmHotelBooking()"
-            >
-
-                ✅ Confirm Hotel Booking
-
-            </button>
-
-        </div>
-
-
-    </div>
-
-</div>
-
-
-<script src="script.js"></script>
-
-
-<!-- DATE VALIDATION -->
-
-<script>
-
-    let today = new Date();
-
-    let year = today.getFullYear();
-
-    let month = String(
-        today.getMonth() + 1
-    ).padStart(2, "0");
-
-    let day = String(
-        today.getDate()
-    ).padStart(2, "0");
-
-
-    let minDate =
-        year + "-" +
-        month + "-" +
-        day;
-
-
-    let checkIn =
-        document.getElementById(
-            "checkIn"
-        );
-
-
-    let checkOut =
-        document.getElementById(
-            "checkOut"
-        );
-
-
-    // Prevent past dates for Check-In
-    checkIn.min = minDate;
-
-
-    // Prevent past dates for Check-Out
-    checkOut.min = minDate;
-
-
-    // When Check-In date changes
-    checkIn.addEventListener(
-        "change",
-        function()
-        {
-
-            let selectedDate =
-                new Date(
-                    checkIn.value
-                );
-
-
-            // Add 1 day
-            selectedDate.setDate(
-                selectedDate.getDate() + 1
-            );
-
-
-            let nextYear =
-                selectedDate.getFullYear();
-
-
-            let nextMonth =
-                String(
-                    selectedDate.getMonth() + 1
-                ).padStart(2, "0");
-
-
-            let nextDay =
-                String(
-                    selectedDate.getDate()
-                ).padStart(2, "0");
-
-
-            let nextDate =
-                nextYear + "-" +
-                nextMonth + "-" +
-                nextDay;
-
-
-            // Check-Out must be after Check-In
-            checkOut.min = nextDate;
-
-
-            // Automatically update Check-Out
-            if(
-                checkOut.value < nextDate
-            )
-            {
-
-                checkOut.value =
-                    nextDate;
-
+ 
+    </main>
+ 
+    <script src="script.js"></script>
+ 
+    <!-- Date validation: check-out must be at least one day after check-in. -->
+    <script>
+        (function () {
+            const checkInInput = document.getElementById("checkIn");
+            const checkOutInput = document.getElementById("checkOut");
+ 
+            if (!checkInInput || !checkOutInput) {
+                return;
             }
-
-        }
-    );
-
-
-    // Set today's date as default Check-In
-    checkIn.value = minDate;
-
-
-    // Trigger Check-In change
-    checkIn.dispatchEvent(
-        new Event("change")
-    );
-
-</script>
-```
-
+ 
+            function formatLocalDate(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                return `${year}-${month}-${day}`;
+            }
+ 
+            function getNextDate(dateString) {
+                const parts = dateString.split("-").map(Number);
+                const date = new Date(parts[0], parts[1] - 1, parts[2]);
+                date.setDate(date.getDate() + 1);
+                return formatLocalDate(date);
+            }
+ 
+            const todayString = formatLocalDate(new Date());
+ 
+            checkInInput.min = todayString;
+            checkOutInput.min = getNextDate(todayString);
+ 
+            if (!checkInInput.value || checkInInput.value < todayString) {
+                checkInInput.value = todayString;
+            }
+ 
+            function updateCheckOutMinimum() {
+                if (!checkInInput.value) {
+                    checkOutInput.min = getNextDate(todayString);
+                    return;
+                }
+ 
+                const nextDate = getNextDate(checkInInput.value);
+                checkOutInput.min = nextDate;
+ 
+                if (!checkOutInput.value || checkOutInput.value < nextDate) {
+                    checkOutInput.value = nextDate;
+                }
+            }
+ 
+            checkInInput.addEventListener("change", updateCheckOutMinimum);
+            updateCheckOutMinimum();
+        })();
+    </script>
+ 
 </body>
-
 </html>
