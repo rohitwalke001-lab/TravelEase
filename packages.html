@@ -1,364 +1,178 @@
+
 <!DOCTYPE html>
-
 <html lang="en">
-
+ 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Explore and book TravelEase holiday and travel packages.">
     <title>Travel Packages - TravelEase</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
+ 
 <body>
-
-
+ 
 <!-- ================= NAVBAR ================= -->
-
-<nav>
-
-    <a
-        href="index.html"
-        class="logo"
-    >
-
+ 
+<nav aria-label="Main navigation">
+ 
+    <a href="index.html" class="logo">
         🚌 Travel<span>Ease</span>
-
     </a>
-
-
+ 
     <ul class="nav-links">
-
+        <li><a href="index.html">Home</a></li>
+        <li><a href="buses.html">Bus Tickets</a></li>
+        <li><a href="hotels.html">Hotels</a></li>
+        <li><a href="destinations.html">Destinations</a></li>
         <li>
-            <a href="index.html">
-                Home
-            </a>
-        </li>
-
-
-        <li>
-            <a href="buses.html">
-                Bus Tickets
-            </a>
-        </li>
-
-
-        <li>
-            <a href="hotels.html">
-                Hotels
-            </a>
-        </li>
-
-
-        <li>
-            <a href="destinations.html">
-                Destinations
-            </a>
-        </li>
-
-
-        <li>
-            <a
-                href="packages.html"
-                class="active"
-            >
+            <a href="packages.html" class="active" aria-current="page">
                 Packages
             </a>
         </li>
-
-
-        <li>
-            <a href="bookings.html">
-                My Bookings
-            </a>
-        </li>
-
+        <li><a href="bookings.html">My Bookings</a></li>
     </ul>
-
-
-    <div
-        class="nav-buttons"
-        id="navButtons"
-    ></div>
-
+ 
+    <div class="nav-buttons" id="navButtons"></div>
+ 
 </nav>
-
-
-
+ 
 <!-- ================= HERO ================= -->
-
-<section class="packages-hero">
-
-    <div class="packages-hero-content">
-
-        <div class="package-small-title">
-
-            ✨ EXPLORE WITH TRAVELEASE
-
-        </div>
-
-
-        <h1>
-
-            Discover Your Perfect
-            <span>Travel Package</span>
-
-        </h1>
-
-
-        <p>
-
-            Choose from our specially designed travel packages
-            and enjoy unforgettable journeys at amazing prices.
-
-        </p>
-
-
-        <div class="package-hero-features">
-
-            <div>
-
-                🎁
-
-                <span>
-                    Best Packages
-                </span>
-
+ 
+<main>
+ 
+    <section class="packages-hero" aria-labelledby="packagesHeroTitle">
+ 
+        <div class="packages-hero-content">
+ 
+            <div class="package-small-title">
+                ✨ EXPLORE WITH TRAVELEASE
             </div>
-
-
-            <div>
-
-                💰
-
-                <span>
-                    Great Discounts
-                </span>
-
-            </div>
-
-
-            <div>
-
-                ⭐
-
-                <span>
-                    Memorable Trips
-                </span>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-
-
-
-<!-- ================= PACKAGES ================= -->
-
-<section class="packages-section">
-
-
-    <div class="packages-heading">
-
-        <p>
-            FIND YOUR NEXT ADVENTURE
-        </p>
-
-
-        <h2>
-
-            Popular Travel Packages
-
-        </h2>
-
-
-        <span>
-
-            Explore exciting destinations and choose
-            the package that suits you best.
-
-        </span>
-
-    </div>
-
-
-
-    <!-- IMPORTANT:
-         Keep the ID which your showPackages()
-         function is already using.
-    -->
-
-    <div
-        id="packagesContainer"
-        class="packages-grid"
-    >
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ================= WHY CHOOSE ================= -->
-
-<section class="package-benefits">
-
-
-    <div class="benefits-heading">
-
-        <h2>
-
-            Why Travel With Us?
-
-        </h2>
-
-
-        <p>
-
-            Everything you need for a comfortable
-            and memorable journey.
-
-        </p>
-
-    </div>
-
-
-
-    <div class="benefits-grid">
-
-
-        <div class="benefit-card">
-
-            <div class="benefit-icon">
-
-                🎁
-
-            </div>
-
-
-            <h3>
-
-                Best Packages
-
-            </h3>
-
-
+ 
+            <h1 id="packagesHeroTitle">
+                Discover Your Perfect
+                <span>Travel Package</span>
+            </h1>
+ 
             <p>
-
-                Carefully designed packages
-                for every type of traveler.
-
+                Choose from our specially designed travel packages
+                and enjoy unforgettable journeys at amazing prices.
             </p>
-
-        </div>
-
-
-
-        <div class="benefit-card">
-
-            <div class="benefit-icon">
-
-                💰
-
+ 
+            <div class="package-hero-features">
+ 
+                <div>
+                    🎁
+                    <span>Best Packages</span>
+                </div>
+ 
+                <div>
+                    💰
+                    <span>Great Discounts</span>
+                </div>
+ 
+                <div>
+                    ⭐
+                    <span>Memorable Trips</span>
+                </div>
+ 
             </div>
-
-
-            <h3>
-
-                Best Prices
-
-            </h3>
-
-
-            <p>
-
-                Get exciting discounts
-                and affordable travel deals.
-
-            </p>
-
+ 
         </div>
-
-
-
-        <div class="benefit-card">
-
-            <div class="benefit-icon">
-
-                🚌
-
-            </div>
-
-
-            <h3>
-
-                Easy Booking
-
-            </h3>
-
-
-            <p>
-
-                Book your favorite package
-                quickly and easily.
-
-            </p>
-
+ 
+    </section>
+ 
+    <!-- ================= PACKAGES ================= -->
+ 
+    <section class="packages-section" aria-labelledby="popularPackagesTitle">
+ 
+        <div class="packages-heading">
+ 
+            <p>FIND YOUR NEXT ADVENTURE</p>
+ 
+            <h2 id="popularPackagesTitle">
+                Popular Travel Packages
+            </h2>
+ 
+            <span>
+                Explore exciting destinations and choose
+                the package that suits you best.
+            </span>
+ 
         </div>
-
-
-
-        <div class="benefit-card">
-
-            <div class="benefit-icon">
-
-                ⭐
-
-            </div>
-
-
-            <h3>
-
-                Great Experience
-
-            </h3>
-
-
+ 
+        <!-- Keep this ID: script.js showPackages() uses it. -->
+        <div
+            id="packagesContainer"
+            class="packages-grid"
+            aria-live="polite"
+            aria-relevant="additions text"
+        ></div>
+ 
+    </section>
+ 
+    <!-- ================= WHY CHOOSE ================= -->
+ 
+    <section class="package-benefits" aria-labelledby="packageBenefitsTitle">
+ 
+        <div class="benefits-heading">
+ 
+            <h2 id="packageBenefitsTitle">
+                Why Travel With Us?
+            </h2>
+ 
             <p>
-
-                Create unforgettable memories
-                with TravelEase.
-
+                Everything you need for a comfortable
+                and memorable journey.
             </p>
-
+ 
         </div>
-
-
-    </div>
-
-
-</section>
-
-
-
+ 
+        <div class="benefits-grid">
+ 
+            <article class="benefit-card">
+                <div class="benefit-icon">🎁</div>
+                <h3>Best Packages</h3>
+                <p>
+                    Carefully designed packages
+                    for every type of traveler.
+                </p>
+            </article>
+ 
+            <article class="benefit-card">
+                <div class="benefit-icon">💰</div>
+                <h3>Best Prices</h3>
+                <p>
+                    Get exciting discounts
+                    and affordable travel deals.
+                </p>
+            </article>
+ 
+            <article class="benefit-card">
+                <div class="benefit-icon">🚌</div>
+                <h3>Easy Booking</h3>
+                <p>
+                    Book your favorite package
+                    quickly and easily.
+                </p>
+            </article>
+ 
+            <article class="benefit-card">
+                <div class="benefit-icon">⭐</div>
+                <h3>Great Experience</h3>
+                <p>
+                    Create unforgettable memories
+                    with TravelEase.
+                </p>
+            </article>
+ 
+        </div>
+ 
+    </section>
+ 
+</main>
+ 
 <script src="script.js"></script>
-
-
+ 
 </body>
-
 </html>
