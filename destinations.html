@@ -1,483 +1,227 @@
+
 <!DOCTYPE html>
-
 <html lang="en">
-
+ 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Destinations - TravelEase
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Discover popular travel destinations and plan your next journey with TravelEase.">
+    <title>Destinations - TravelEase</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
+ 
 <body>
-
-
+ 
 <!-- ========================================= -->
 <!-- NAVBAR -->
 <!-- ========================================= -->
-
-<nav>
-
-    <div class="logo">
-
+ 
+<nav aria-label="Main navigation">
+ 
+    <a href="index.html" class="logo">
         🚌 Travel<span>Ease</span>
-
-    </div>
-
-
+    </a>
+ 
     <ul class="nav-links">
-
+        <li><a href="index.html">Home</a></li>
+        <li><a href="buses.html">Bus Tickets</a></li>
+        <li><a href="hotels.html">Hotels</a></li>
         <li>
-            <a href="index.html">
-                Home
-            </a>
-        </li>
-
-
-        <li>
-            <a href="buses.html">
-                Bus Tickets
-            </a>
-        </li>
-
-
-        <li>
-            <a href="hotels.html">
-                Hotels
-            </a>
-        </li>
-
-
-        <li>
-            <a
-                href="destinations.html"
-                class="active"
-            >
+            <a href="destinations.html" class="active" aria-current="page">
                 Destinations
             </a>
         </li>
-
-
-        <li>
-            <a href="packages.html">
-                Packages
-            </a>
-        </li>
-
-
-        <li>
-            <a href="bookings.html">
-                My Bookings
-            </a>
-        </li>
-
+        <li><a href="packages.html">Packages</a></li>
+        <li><a href="bookings.html">My Bookings</a></li>
     </ul>
-
-
-    <div
-        class="nav-buttons"
-        id="navButtons"
-    ></div>
-
+ 
+    <div class="nav-buttons" id="navButtons"></div>
+ 
 </nav>
-
-
-
+ 
 <!-- ========================================= -->
 <!-- DESTINATION HERO SECTION -->
 <!-- ========================================= -->
-
-<section class="destination-hero">
-
-
-    <div class="destination-hero-content">
-
-
-        <div class="destination-badge">
-
-            🌍 EXPLORE • DISCOVER • ENJOY
-
-        </div>
-
-
-        <h1>
-
-            Discover Amazing
-            <span>Destinations</span>
-
-        </h1>
-
-
-        <p>
-
-            Explore beautiful places, discover new experiences
-            and plan your perfect journey with TravelEase.
-
-        </p>
-
-
-        <div class="destination-features">
-
-
-            <div class="destination-feature">
-
-                <span>
-                    🗺️
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Amazing Places
-                    </strong>
-
-                    <p>
-                        Discover beautiful destinations
-                    </p>
-
+ 
+<main>
+ 
+    <section class="destination-hero" aria-labelledby="destinationHeroTitle">
+ 
+        <div class="destination-hero-content">
+ 
+            <div class="destination-badge">
+                🌍 EXPLORE • DISCOVER • ENJOY
+            </div>
+ 
+            <h1 id="destinationHeroTitle">
+                Discover Amazing
+                <span>Destinations</span>
+            </h1>
+ 
+            <p>
+                Explore beautiful places, discover new experiences
+                and plan your perfect journey with TravelEase.
+            </p>
+ 
+            <div class="destination-features">
+ 
+                <div class="destination-feature">
+                    <span>🗺️</span>
+                    <div>
+                        <strong>Amazing Places</strong>
+                        <p>Discover beautiful destinations</p>
+                    </div>
                 </div>
-
-            </div>
-
-
-
-            <div class="destination-feature">
-
-                <span>
-                    📍
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Popular Locations
-                    </strong>
-
-                    <p>
-                        Explore India's best destinations
-                    </p>
-
+ 
+                <div class="destination-feature">
+                    <span>📍</span>
+                    <div>
+                        <strong>Popular Locations</strong>
+                        <p>Explore India's best destinations</p>
+                    </div>
                 </div>
-
-            </div>
-
-
-
-            <div class="destination-feature">
-
-                <span>
-                    ✨
-                </span>
-
-
-                <div>
-
-                    <strong>
-                        Great Experiences
-                    </strong>
-
-                    <p>
-                        Create unforgettable memories
-                    </p>
-
+ 
+                <div class="destination-feature">
+                    <span>✨</span>
+                    <div>
+                        <strong>Great Experiences</strong>
+                        <p>Create unforgettable memories</p>
+                    </div>
                 </div>
-
+ 
             </div>
-
-
+ 
         </div>
-
-
-    </div>
-
-
-
-    <div class="destination-hero-icon">
-
-        🌍
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ========================================= -->
-<!-- DESTINATION LIST -->
-<!-- ========================================= -->
-
-<section class="destination-list-section">
-
-
-    <div class="destination-list-heading">
-
-
-        <div class="destination-heading-badge">
-
-            🗺️ POPULAR DESTINATIONS
-
+ 
+        <div class="destination-hero-icon" aria-hidden="true">
+            🌍
         </div>
-
-
-        <h2>
-
-            Explore Our Destinations
-
-        </h2>
-
-
-        <p>
-
-            Discover amazing places and choose your
-            next favorite destination.
-
-        </p>
-
-
-    </div>
-
-
-
-    <!-- IMPORTANT: KEEP SAME ID -->
-
-    <div
-        class="card-container destination-results-container"
-        id="destinationResults"
-    >
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ========================================= -->
-<!-- WHY EXPLORE WITH US -->
-<!-- ========================================= -->
-
-<section class="destination-why-section">
-
-
-    <div class="destination-why-heading">
-
-
-        <h2>
-
-            Why Explore With TravelEase?
-
-        </h2>
-
-
-        <p>
-
-            Discover new places and make every journey special.
-
-        </p>
-
-
-    </div>
-
-
-
-    <div class="destination-why-grid">
-
-
-        <!-- CARD 1 -->
-
-        <div class="destination-why-card">
-
-
-            <div class="destination-why-icon">
-
-                🌍
-
+ 
+    </section>
+ 
+    <!-- ========================================= -->
+    <!-- DESTINATION LIST -->
+    <!-- ========================================= -->
+ 
+    <section class="destination-list-section" aria-labelledby="destinationListTitle">
+ 
+        <div class="destination-list-heading">
+ 
+            <div class="destination-heading-badge">
+                🗺️ POPULAR DESTINATIONS
             </div>
-
-
-            <h3>
-
-                Beautiful Places
-
-            </h3>
-
-
-            <p>
-
-                Discover amazing destinations
-                and beautiful locations.
-
-            </p>
-
-
-        </div>
-
-
-
-        <!-- CARD 2 -->
-
-        <div class="destination-why-card">
-
-
-            <div class="destination-why-icon">
-
-                📍
-
-            </div>
-
-
-            <h3>
-
-                Popular Locations
-
-            </h3>
-
-
-            <p>
-
-                Explore famous places
-                across India.
-
-            </p>
-
-
-        </div>
-
-
-
-        <!-- CARD 3 -->
-
-        <div class="destination-why-card">
-
-
-            <div class="destination-why-icon">
-
-                🚌
-
-            </div>
-
-
-            <h3>
-
-                Easy Travel
-
-            </h3>
-
-
-            <p>
-
-                Plan your journey
-                quickly and easily.
-
-            </p>
-
-
-        </div>
-
-
-
-        <!-- CARD 4 -->
-
-        <div class="destination-why-card">
-
-
-            <div class="destination-why-icon">
-
-                ⭐
-
-            </div>
-
-
-            <h3>
-
-                Great Memories
-
-            </h3>
-
-
-            <p>
-
-                Create unforgettable memories
-                with every journey.
-
-            </p>
-
-
-        </div>
-
-
-    </div>
-
-
-</section>
-
-
-
-<!-- ========================================= -->
-<!-- TRAVEL TIP -->
-<!-- ========================================= -->
-
-<section class="destination-tips-section">
-
-
-    <div class="destination-tips-box">
-
-
-        <div class="destination-tips-icon">
-
-            💡
-
-        </div>
-
-
-        <div>
-
-
-            <h2>
-
-                Travel Tip
-
+ 
+            <h2 id="destinationListTitle">
+                Explore Our Destinations
             </h2>
-
-
+ 
             <p>
-
-                Explore destination details before planning
-                your journey to make your trip more enjoyable.
-
+                Discover amazing places and choose your
+                next favorite destination.
             </p>
-
-
+ 
         </div>
-
-
-    </div>
-
-
-</section>
-
-
-
+ 
+        <!-- Keep this ID: script.js renders destination cards here. -->
+        <div
+            class="card-container destination-results-container"
+            id="destinationResults"
+            aria-live="polite"
+            aria-relevant="additions text"
+        ></div>
+ 
+    </section>
+ 
+    <!-- ========================================= -->
+    <!-- WHY EXPLORE WITH US -->
+    <!-- ========================================= -->
+ 
+    <section class="destination-why-section" aria-labelledby="destinationWhyTitle">
+ 
+        <div class="destination-why-heading">
+ 
+            <h2 id="destinationWhyTitle">
+                Why Explore With TravelEase?
+            </h2>
+ 
+            <p>
+                Discover new places and make every journey special.
+            </p>
+ 
+        </div>
+ 
+        <div class="destination-why-grid">
+ 
+            <article class="destination-why-card">
+                <div class="destination-why-icon">🌍</div>
+                <h3>Beautiful Places</h3>
+                <p>
+                    Discover amazing destinations
+                    and beautiful locations.
+                </p>
+            </article>
+ 
+            <article class="destination-why-card">
+                <div class="destination-why-icon">📍</div>
+                <h3>Popular Locations</h3>
+                <p>
+                    Explore famous places
+                    across India.
+                </p>
+            </article>
+ 
+            <article class="destination-why-card">
+                <div class="destination-why-icon">🚌</div>
+                <h3>Easy Travel</h3>
+                <p>
+                    Plan your journey
+                    quickly and easily.
+                </p>
+            </article>
+ 
+            <article class="destination-why-card">
+                <div class="destination-why-icon">⭐</div>
+                <h3>Great Memories</h3>
+                <p>
+                    Create unforgettable memories
+                    with every journey.
+                </p>
+            </article>
+ 
+        </div>
+ 
+    </section>
+ 
+    <!-- ========================================= -->
+    <!-- TRAVEL TIP -->
+    <!-- ========================================= -->
+ 
+    <section class="destination-tips-section" aria-labelledby="destinationTipsTitle">
+ 
+        <div class="destination-tips-box">
+ 
+            <div class="destination-tips-icon" aria-hidden="true">
+                💡
+            </div>
+ 
+            <div>
+                <h2 id="destinationTipsTitle">
+                    Travel Tip
+                </h2>
+ 
+                <p>
+                    Explore destination details before planning
+                    your journey to make your trip more enjoyable.
+                </p>
+            </div>
+ 
+        </div>
+ 
+    </section>
+ 
+</main>
+ 
 <script src="script.js"></script>
-
-
+ 
 </body>
-
 </html>
