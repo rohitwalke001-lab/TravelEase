@@ -1,21 +1,24 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TravelEase makes it easy to explore India. Search bus journeys, discover hotels and explore travel packages.">
+    <meta name="theme-color" content="#ffffff">
     <title>TravelEase - Explore India Easily</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="home-page-body">
-
+ 
 <!-- ================= NAVIGATION ================= -->
-<nav class="home-nav">
-    <a href="index.html" class="logo">
-        <span class="logo-plane">🚌</span> Travel<span>Ease</span>
+<nav class="home-nav" aria-label="Main navigation">
+    <a href="index.html" class="logo" aria-label="TravelEase home">
+        <span class="logo-plane" aria-hidden="true">🚌</span> Travel<span>Ease</span>
     </a>
-
+ 
     <ul class="nav-links">
-        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="index.html" class="active" aria-current="page">Home</a></li>
         <li><a href="buses.html">Bus</a></li>
         <li><a href="hotels.html">Hotels</a></li>
         <li><a href="packages.html">Packages</a></li>
@@ -23,114 +26,115 @@
         <li><a href="#about">About</a></li>
         <li><a href="#contact">Contact</a></li>
     </ul>
-
+ 
     <div class="nav-buttons" id="navButtons">
         <a href="login.html" class="login-btn">👤 Login</a>
         <a href="register.html" class="signup-btn">✨ Sign Up</a>
     </div>
 </nav>
-
+ 
 <!-- ================= HERO SECTION ================= -->
-<section class="hero-showcase">
-    <div class="hero-overlay-dark"></div>
-
+<main>
+<section class="hero-showcase" aria-label="Search and explore travel options">
+    <div class="hero-overlay-dark" aria-hidden="true"></div>
+ 
     <div class="hero-inner-container">
         <div class="hero-text-block">
             <div class="hero-priority-badge">
-                <span class="badge-dash"></span> YOUR JOURNEY, OUR PRIORITY
+                <span class="badge-dash" aria-hidden="true"></span> YOUR JOURNEY, OUR PRIORITY
             </div>
-            
+ 
             <h1>
                 Explore India<br>
                 <span class="highlight-orange">The Easy Way</span>
             </h1>
-            
+ 
             <p>
                 Book bus tickets, hotels and travel packages with exclusive deals, safe journeys and unforgettable experiences.
             </p>
         </div>
     </div>
-
+ 
     <!-- ================= FLOATING SEARCH CAPSULE ================= -->
     <div class="search-floating-container">
         <div class="search-capsule-bar">
             <!-- FROM -->
             <div class="search-item">
-                <div class="item-icon-box">🚌</div>
+                <div class="item-icon-box" aria-hidden="true">🚌</div>
                 <div class="item-info">
-                    <label>From</label>
-                    <input type="text" id="homeFrom" placeholder="Enter city or location">
+                    <label for="homeFrom">From</label>
+                    <input type="text" id="homeFrom" name="from" placeholder="Enter city or location" autocomplete="address-level2">
                 </div>
-                <span class="item-caret">⌄</span>
+                <span class="item-caret" aria-hidden="true">⌄</span>
             </div>
-
-            <div class="item-divider"></div>
-
+ 
+            <div class="item-divider" aria-hidden="true"></div>
+ 
             <!-- TO -->
             <div class="search-item">
-                <div class="item-icon-box orange-tint">📍</div>
+                <div class="item-icon-box orange-tint" aria-hidden="true">📍</div>
                 <div class="item-info">
-                    <label>To</label>
-                    <input type="text" id="homeTo" placeholder="Enter city or location">
+                    <label for="homeTo">To</label>
+                    <input type="text" id="homeTo" name="to" placeholder="Enter city or location" autocomplete="off">
                 </div>
-                <span class="item-caret">⌄</span>
+                <span class="item-caret" aria-hidden="true">⌄</span>
             </div>
-
-            <div class="item-divider"></div>
-
+ 
+            <div class="item-divider" aria-hidden="true"></div>
+ 
             <!-- TRAVEL DATE -->
             <div class="search-item">
-                <div class="item-icon-box">📅</div>
+                <div class="item-icon-box" aria-hidden="true">📅</div>
                 <div class="item-info">
-                    <label>Travel Date</label>
-                    <input type="date" id="homeDate">
+                    <label for="homeDate">Travel Date</label>
+                    <input type="date" id="homeDate" name="travelDate">
                 </div>
-                <span class="item-caret">⌄</span>
+                <span class="item-caret" aria-hidden="true">⌄</span>
             </div>
-
+ 
             <!-- SUBMIT BUTTON -->
-            <button class="search-submit-btn" onclick="homeBusSearch()">
+            <button type="button" class="search-submit-btn" onclick="homeBusSearch()">
                 🔍 Search
             </button>
         </div>
     </div>
 </section>
-
+ 
 <!-- ================= 4-FEATURE RIBBON ================= -->
-<div class="services-ribbon-bar">
+<div class="services-ribbon-bar" aria-label="TravelEase services">
     <div class="ribbon-inner-grid">
         <div class="ribbon-col">
-            <div class="ribbon-icon-bubble">🚌</div>
+            <div class="ribbon-icon-bubble" aria-hidden="true">🚌</div>
             <div>
                 <h4>Bus Booking</h4>
                 <p>Safe & Comfortable Journeys</p>
             </div>
         </div>
-
-        <div class="ribbon-divider"></div>
-
+ 
+        <div class="ribbon-divider" aria-hidden="true"></div>
+ 
         <div class="ribbon-col">
-            <div class="ribbon-icon-bubble">🏨</div>
+            <div class="ribbon-icon-bubble" aria-hidden="true">🏨</div>
             <div>
                 <h4>Hotel Booking</h4>
                 <p>Stay Across Top Destinations</p>
             </div>
         </div>
-
-        <div class="ribbon-divider"></div>
-
+ 
+        <div class="ribbon-divider" aria-hidden="true"></div>
+ 
         <div class="ribbon-col">
-            <div class="ribbon-icon-bubble">📦</div>
+            <div class="ribbon-icon-bubble" aria-hidden="true">📦</div>
             <div>
                 <h4>Travel Packages</h4>
                 <p>Explore More, Spend Less</p>
             </div>
         </div>
-
-        <div class="ribbon-divider"></div>
-
+ 
+        <div class="ribbon-divider" aria-hidden="true"></div>
+ 
         <div class="ribbon-col">
-            <div class="ribbon-icon-bubble">🛡️</div>
+            <div class="ribbon-icon-bubble" aria-hidden="true">🛡️</div>
             <div>
                 <h4>Secure Payments</h4>
                 <p>100% Safe & Trusted</p>
@@ -138,60 +142,60 @@
         </div>
     </div>
 </div>
-
+ 
 <!-- ================= POPULAR DESTINATIONS ================= -->
-<section class="section home-destinations-section">
+<section class="section home-destinations-section" aria-labelledby="popular-destinations-title">
     <div class="destinations-header-row">
         <div>
             <div class="section-tagline">
-                <span class="badge-dash"></span> DISCOVER AMAZING PLACES
+                <span class="badge-dash" aria-hidden="true"></span> DISCOVER AMAZING PLACES
             </div>
-            <h2>Popular <span>Destinations</span></h2>
+            <h2 id="popular-destinations-title">Popular <span>Destinations</span></h2>
             <p class="section-subtext">
                 Explore the most beautiful places in India with comfortable travel options and unbeatable deals.
             </p>
         </div>
-
+ 
         <a href="destinations.html" class="view-all-pill-btn">
             View All Destinations →
         </a>
     </div>
-
+ 
     <!-- 4 DESTINATION CARDS -->
     <div class="destination-cards-row">
         <!-- Goa -->
         <div class="travel-image-card">
-            <img src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80" alt="Goa">
+            <img src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80" alt="Goa beach" loading="lazy" decoding="async">
             <div class="travel-card-overlay">
                 <div class="card-loc-title">📍 Goa</div>
                 <div class="card-tags">Beaches • Nightlife • Adventure</div>
                 <a href="destinations.html" class="card-explore-link">Explore →</a>
             </div>
         </div>
-
+ 
         <!-- Manali -->
         <div class="travel-image-card">
-            <img src="https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=800&q=80" alt="Manali">
+            <img src="https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?auto=format&fit=crop&w=800&q=80" alt="Manali mountains" loading="lazy" decoding="async">
             <div class="travel-card-overlay">
                 <div class="card-loc-title">📍 Manali</div>
                 <div class="card-tags">Mountains • Snow • Adventure</div>
                 <a href="destinations.html" class="card-explore-link">Explore →</a>
             </div>
         </div>
-
+ 
         <!-- Jaipur -->
         <div class="travel-image-card">
-            <img src="https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=800&q=80" alt="Jaipur">
+            <img src="https://images.unsplash.com/photo-1477587458883-47145ed94245?auto=format&fit=crop&w=800&q=80" alt="Jaipur heritage architecture" loading="lazy" decoding="async">
             <div class="travel-card-overlay">
                 <div class="card-loc-title">📍 Jaipur</div>
                 <div class="card-tags">Heritage • Culture • Royalty</div>
                 <a href="destinations.html" class="card-explore-link">Explore →</a>
             </div>
         </div>
-
+ 
         <!-- Kerala / Backwaters -->
         <div class="travel-image-card">
-            <img src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80" alt="Kerala">
+            <img src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80" alt="Kerala backwaters" loading="lazy" decoding="async">
             <div class="travel-card-overlay">
                 <div class="card-loc-title">📍 Kerala</div>
                 <div class="card-tags">Backwaters • Nature • Peace</div>
@@ -200,37 +204,38 @@
         </div>
     </div>
 </section>
-
+ 
 <!-- ================= WHY CHOOSE US ================= -->
-<section class="section-dark-showcase" id="about">
+<section class="section-dark-showcase" id="about" aria-labelledby="why-choose-title">
     <div class="dark-showcase-container">
         <div class="section-tagline orange-accent">
-            <span class="badge-dash"></span> WHY CHOOSE US
+            <span class="badge-dash" aria-hidden="true"></span> WHY CHOOSE US
         </div>
-        <h2>Traveling Made Better</h2>
-
+        <h2 id="why-choose-title">Traveling Made Better</h2>
+ 
         <div class="dark-cards-grid">
             <div class="dark-feature-box">
-                <div class="box-badge-icon">🚌</div>
+                <div class="box-badge-icon" aria-hidden="true">🚌</div>
                 <h3>Easy Bus Booking</h3>
                 <p>Book luxury, sleeper, and express buses with real-time seat confirmation.</p>
             </div>
-
+ 
             <div class="dark-feature-box">
-                <div class="box-badge-icon">🏨</div>
+                <div class="box-badge-icon" aria-hidden="true">🏨</div>
                 <h3>Verified Hotels</h3>
                 <p>Top-rated resorts and boutique hotels handpicked for clean comfort.</p>
             </div>
-
+ 
             <div class="dark-feature-box">
-                <div class="box-badge-icon">🎁</div>
+                <div class="box-badge-icon" aria-hidden="true">🎁</div>
                 <h3>All-Inclusive Packages</h3>
                 <p>Seamless itineraries combining transit, stays, and guided sightseeing.</p>
             </div>
         </div>
     </div>
 </section>
-
+</main>
+ 
 <!-- ================= FOOTER ================= -->
 <footer id="contact">
     <h2>🚌 Travel<span>Ease</span></h2>
@@ -240,7 +245,21 @@
     <br>
     <a href="admin-login.html" class="admin-link">🏢 Travel Company Owner Login</a>
 </footer>
-
+ 
+<script>
+    // Prevent selecting a travel date in the past.
+    (function setMinimumTravelDate() {
+        const dateInput = document.getElementById("homeDate");
+        if (!dateInput) return;
+ 
+        const today = new Date();
+        const localToday = new Date(
+            today.getTime() - today.getTimezoneOffset() * 60000
+        ).toISOString().slice(0, 10);
+ 
+        dateInput.min = localToday;
+    })();
+</script>
 <script src="script.js"></script>
 </body>
 </html>
