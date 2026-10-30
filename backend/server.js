@@ -1,337 +1,291 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
-
+ 
 const app = express();
 const PORT = process.env.PORT || 5000;
-
+ 
 const ROOT = path.join(__dirname, '..');
 const DATA_DIR = path.join(__dirname, 'data');
 const LOCAL_FILE = path.join(DATA_DIR, 'state.json');
-
+ 
 const STATE_ID = 'travelease-main-state';
-
+const UPI_ID = String(process.env.OWNER_UPI_ID || '').trim();
+const UPI_PAYEE_NAME = String(process.env.OWNER_UPI_NAME || 'TravelEase').trim();
+ 
+// IMPORTANT: Keep the existing MongoDB state document and its existing keys.
+// Payment records are stored as additional keys in the same state document.
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-
+ 
 // ===============================
 // MONGODB STATE SCHEMA
 // ===============================
-
+ 
 const StateSchema = new mongoose.Schema({
   _id: {
     type: String,
     required: true
   },
-
   state: {
     type: mongoose.Schema.Types.Mixed,
     required: true
   },
-
   updatedAt: {
     type: Date,
     default: Date.now
   }
-
 }, {
   versionKey: false
 });
-
+ 
 const State = mongoose.model('TravelEaseState', StateSchema);
-
-
+ 
 // ===============================
 // LOCAL DATA FUNCTIONS
 // ===============================
-
+ 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
 }
-
-
+ 
 function readLocalState() {
   ensureDataDir();
-
-  if (!fs.existsSync(LOCAL_FILE)) {
-    return null;
-  }
-
+  if (!fs.existsSync(LOCAL_FILE)) return null;
+ 
   try {
-    return JSON.parse(
-      fs.readFileSync(LOCAL_FILE, 'utf8')
-    );
+    return JSON.parse(fs.readFileSync(LOCAL_FILE, 'utf8'));
   } catch (err) {
     console.error('TravelEase: Unable to read local state.json');
     return null;
   }
 }
-
-
+ 
 function writeLocalState(state) {
   ensureDataDir();
-
-  fs.writeFileSync(
-    LOCAL_FILE,
-    JSON.stringify(state, null, 2),
-    'utf8'
-  );
+  fs.writeFileSync(LOCAL_FILE, JSON.stringify(state, null, 2), 'utf8');
 }
-
-
+ 
 // ===============================
 // MONGODB CONNECTION
 // ===============================
-
+ 
 let mongoReady = false;
-
-
+ 
 async function connectMongo() {
-
   if (!process.env.MONGO_URI) {
     console.warn('TravelEase: MONGO_URI not found.');
     return;
   }
-
+ 
   try {
-
-    await mongoose.connect(
-      process.env.MONGO_URI,
-      {
-        serverSelectionTimeoutMS: 5000
-      }
-    );
-
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000
+    });
+ 
     mongoReady = true;
-
     console.log('TravelEase: MongoDB connected');
-
-
-    // ==========================================
-    // LOCAL JSON → MONGODB MIGRATION
-    // ==========================================
-
-    const existingMongoData = await State
-      .findById(STATE_ID)
-      .lean();
-
-
-    // MongoDB मध्ये data आधीपासून नसेल तरच
-    // local state.json मधला data migrate करायचा
+ 
+    // Local JSON is migrated only if the existing MongoDB state document is absent.
+    const existingMongoData = await State.findById(STATE_ID).lean();
+ 
     if (!existingMongoData) {
-
       const localState = readLocalState();
-
-
+ 
       if (localState) {
-
-        console.log(
-          'TravelEase: Local state.json found.'
-        );
-
+        console.log('TravelEase: Local state.json found.');
+ 
         await State.findByIdAndUpdate(
-
           STATE_ID,
-
           {
             _id: STATE_ID,
             state: localState,
             updatedAt: new Date()
           },
-
           {
             upsert: true,
             new: true,
             setDefaultsOnInsert: true
           }
-
         );
-
-        console.log(
-          'TravelEase: Local data migrated to MongoDB successfully.'
-        );
-
+ 
+        console.log('TravelEase: Local data migrated to MongoDB successfully.');
       } else {
-
-        console.log(
-          'TravelEase: No local state.json data found.'
-        );
-
+        console.log('TravelEase: No local state.json data found.');
       }
-
     } else {
-
-      console.log(
-        'TravelEase: MongoDB already contains TravelEase data. Migration skipped.'
-      );
-
+      console.log('TravelEase: MongoDB already contains TravelEase data. Migration skipped.');
     }
-
-
   } catch (err) {
-
     mongoReady = false;
-
-    console.warn(
-      'TravelEase: MongoDB unavailable; using local JSON fallback.'
-    );
-
-    console.error(
-      'MongoDB ERROR:',
-      err.message
-    );
-
+    console.warn('TravelEase: MongoDB unavailable; using local JSON fallback.');
+    console.error('MongoDB ERROR:', err.message);
   }
-
 }
-
-
+ 
 // ===============================
-// GET STATE
+// STATE READ / WRITE HELPERS
 // ===============================
-
+ 
 async function getState() {
-
   if (mongoReady) {
-
-    const doc = await State
-      .findById(STATE_ID)
-      .lean();
-
+    const doc = await State.findById(STATE_ID).lean();
     return doc ? doc.state : null;
-
   }
-
   return readLocalState();
 }
-
-
-// ===============================
-// SAVE STATE
-// ===============================
-
+ 
 async function saveState(state) {
-
   if (mongoReady) {
-
     await State.findByIdAndUpdate(
-
       STATE_ID,
-
       {
         _id: STATE_ID,
         state: state,
         updatedAt: new Date()
       },
-
       {
         upsert: true,
         new: true,
         setDefaultsOnInsert: true
       }
-
     );
-
   }
-
-  // Local backup पण ठेवतो
+ 
+  // Local JSON fallback / snapshot. Render local disk may be ephemeral.
   writeLocalState(state);
-
   return state;
 }
-
-
+ 
+// Update only selected keys while preserving every other existing state key.
+async function updateStateKeys(patch) {
+  const current = await getState();
+  if (!current || typeof current !== 'object' || Array.isArray(current)) {
+    throw new Error('TravelEase state is not initialized. Existing data was not changed.');
+  }
+ 
+  const next = { ...current, ...patch };
+  await saveState(next);
+  return next;
+}
+ 
+// ===============================
+// ADMIN SESSION TOKEN
+// ===============================
+ 
+function sessionSecret() {
+  return String(process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || '');
+}
+ 
+function createAdminToken(username) {
+  const secret = sessionSecret();
+  if (!secret) throw new Error('ADMIN_SESSION_SECRET or ADMIN_PASSWORD must be configured.');
+ 
+  const payload = Buffer.from(JSON.stringify({
+    username,
+    role: 'admin',
+    expiresAt: Date.now() + (8 * 60 * 60 * 1000)
+  })).toString('base64url');
+ 
+  const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+ 
+function requireAdmin(req, res, next) {
+  const header = String(req.headers.authorization || '');
+  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+  const parts = token.split('.');
+ 
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    return res.status(401).json({ message: 'Admin authentication required.' });
+  }
+ 
+  try {
+    const expected = crypto.createHmac('sha256', sessionSecret()).update(parts[0]).digest();
+    const received = Buffer.from(parts[1], 'base64url');
+ 
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+      return res.status(401).json({ message: 'Invalid admin session.' });
+    }
+ 
+    const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+    if (payload.role !== 'admin' || !payload.expiresAt || payload.expiresAt < Date.now()) {
+      return res.status(401).json({ message: 'Admin session expired. Please log in again.' });
+    }
+ 
+    req.admin = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Invalid admin session.' });
+  }
+}
+ 
+// ===============================
+// HELPERS FOR PAYMENT / REFUND
+// ===============================
+ 
+function cleanText(value, maxLength = 160) {
+  return String(value == null ? '' : value).trim().slice(0, maxLength);
+}
+ 
+function createId(prefix) {
+  return `${prefix}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}
+ 
+function findBookingIndex(bookings, bookingId) {
+  return bookings.findIndex(item =>
+    item &&
+    String(item.bookingId || item.id || item._id || '') === String(bookingId)
+  );
+}
+ 
 // ===============================
 // HEALTH CHECK
 // ===============================
-
+ 
 app.get('/api/health', (req, res) => {
-
   res.json({
-
     ok: true,
-
     service: 'TravelEase API',
-
-    database: mongoReady
-      ? 'mongodb'
-      : 'local-json'
-
+    database: mongoReady ? 'mongodb' : 'local-json'
   });
-
 });
-
-
+ 
 // ===============================
 // GET COMPLETE STATE
 // ===============================
-
+ 
 app.get('/api/state', async (req, res) => {
-
   try {
-
     const state = await getState();
-
     res.json({
-
       initialized: !!state,
-
       state: state || null
-
     });
-
   } catch (err) {
-
-    console.error(
-      'TravelEase state load error:',
-      err.message
-    );
-
-    res.status(500).json({
-
-      message:
-        'Unable to load TravelEase data.'
-
-    });
-
+    console.error('TravelEase state load error:', err.message);
+    res.status(500).json({ message: 'Unable to load TravelEase data.' });
   }
-
 });
-
-
+ 
 // ===============================
 // SAVE COMPLETE STATE
 // ===============================
-
+ 
 app.put('/api/state', async (req, res) => {
-
   try {
-
-    if (
-      !req.body ||
-      typeof req.body !== 'object' ||
-      Array.isArray(req.body)
-    ) {
-
-      return res.status(400).json({
-
-        message:
-          'Invalid state payload.'
-
-      });
-
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ message: 'Invalid state payload.' });
     }
-
-
+ 
     const allowed = [
-
       'buses',
       'hotels',
       'packages',
@@ -339,274 +293,472 @@ app.put('/api/state', async (req, res) => {
       'bookings',
       'users',
       'ownerRevenue'
-
     ];
-
-
-    const state = {};
-
-
-    for (const key of allowed) {
-
-      if (
-        Object.prototype.hasOwnProperty.call(
-          req.body,
-          key
-        )
-      ) {
-
-        state[key] = req.body[key];
-
-      }
-
+ 
+    const current = await getState();
+    if (!current || typeof current !== 'object' || Array.isArray(current)) {
+      return res.status(409).json({
+        message: 'TravelEase state is not initialized. Save stopped to protect existing data.'
+      });
     }
-
-
+ 
+    // Merge accepted frontend keys into the existing state. Payment/refund keys
+    // and any future keys are preserved if an older frontend does not send them.
+    const state = { ...current };
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        state[key] = req.body[key];
+      }
+    }
+ 
     await saveState(state);
-
-
-    res.json({
-
-      ok: true,
-
-      state: state
-
-    });
-
+    res.json({ ok: true, state });
   } catch (err) {
-
-    console.error(
-      'TravelEase save error:',
-      err.message
-    );
-
-    res.status(500).json({
-
-      message:
-        'Unable to save TravelEase data.'
-
-    });
-
+    console.error('TravelEase save error:', err.message);
+    res.status(500).json({ message: 'Unable to save TravelEase data.' });
   }
-
 });
-
-
+ 
 // ===============================
 // ADMIN LOGIN
 // ===============================
-
+ 
 app.post('/api/auth/admin-login', (req, res) => {
-
-  const username =
-    String(req.body?.username || '');
-
-  const password =
-    String(req.body?.password || '');
-
-
-  const expectedUser =
-    process.env.ADMIN_USERNAME || 'admin';
-
-  const expectedPass =
-    process.env.ADMIN_PASSWORD || 'admin123';
-
-
-  if (
-    username === expectedUser &&
-    password === expectedPass
-  ) {
-
-    return res.json({
-
-      ok: true,
-
-      role: 'admin',
-
-      displayName:
-        'TravelEase Owner'
-
+  const username = String(req.body?.username || '');
+  const password = String(req.body?.password || '');
+ 
+  const expectedUser = process.env.ADMIN_USERNAME || 'admin';
+  const expectedPass = process.env.ADMIN_PASSWORD || 'admin123';
+ 
+  if (username !== expectedUser || password !== expectedPass) {
+    return res.status(401).json({
+      ok: false,
+      message: 'Invalid owner login details!'
     });
-
   }
-
-
-  return res.status(401).json({
-
-    ok: false,
-
-    message:
-      'Invalid owner login details!'
-
-  });
-
+ 
+  try {
+    const token = createAdminToken(username);
+    return res.json({
+      ok: true,
+      role: 'admin',
+      token,
+      displayName: 'TravelEase Owner'
+    });
+  } catch (err) {
+    console.error('Admin token creation failed:', err.message);
+    return res.status(503).json({
+      ok: false,
+      message: 'Admin session is not configured. Set ADMIN_SESSION_SECRET in Render environment variables.'
+    });
+  }
 });
-
-
+ 
+// ===============================
+// PUBLIC PAYMENT CONFIG
+// ===============================
+ 
+app.get('/api/payment/config', (req, res) => {
+  if (!UPI_ID) {
+    return res.status(503).json({ ok: false, message: 'Owner UPI ID is not configured on the server.' });
+  }
+ 
+  res.json({
+    ok: true,
+    upiId: UPI_ID,
+    payeeName: UPI_PAYEE_NAME
+  });
+});
+ 
+// ===============================
+// SUBMIT PAYMENT DETAILS (CUSTOMER)
+// This does NOT verify money received.
+// ===============================
+ 
+app.post('/api/payments/submit', async (req, res) => {
+  try {
+    const bookingId = cleanText(req.body?.bookingId, 100);
+    const utr = cleanText(req.body?.utr, 40);
+    const customerName = cleanText(req.body?.customerName, 100);
+    const customerMobile = cleanText(req.body?.customerMobile, 20);
+    const amount = Number(req.body?.amount);
+ 
+    if (!bookingId || !utr || !/^[A-Za-z0-9-]{6,40}$/.test(utr)) {
+      return res.status(400).json({ ok: false, message: 'Valid booking ID and UTR / transaction reference are required.' });
+    }
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+      return res.status(400).json({ ok: false, message: 'Invalid payment amount.' });
+    }
+ 
+    const current = await getState();
+    if (!current || typeof current !== 'object' || !Array.isArray(current.bookings)) {
+      return res.status(409).json({ ok: false, message: 'Booking data is not available. Please contact the owner.' });
+    }
+ 
+    const bookingIndex = findBookingIndex(current.bookings, bookingId);
+    if (bookingIndex < 0) {
+      return res.status(404).json({ ok: false, message: 'Booking not found.' });
+    }
+ 
+    const bookings = [...current.bookings];
+    const booking = { ...bookings[bookingIndex] };
+    const existingPayments = Array.isArray(current.paymentSubmissions) ? current.paymentSubmissions : [];
+ 
+    const duplicateUtr = existingPayments.some(p =>
+      String(p.utr || '').toLowerCase() === utr.toLowerCase() &&
+      !['REJECTED'].includes(String(p.status || '').toUpperCase())
+    );
+    if (duplicateUtr) {
+      return res.status(409).json({ ok: false, message: 'This transaction reference has already been submitted.' });
+    }
+ 
+    const payment = {
+      paymentId: createId('PAY'),
+      bookingId,
+      customerName,
+      customerMobile,
+      amount,
+      method: 'UPI',
+      utr,
+      status: 'PAYMENT_SUBMITTED',
+      submittedAt: new Date().toISOString(),
+      verifiedAt: null,
+      verifiedBy: null
+    };
+ 
+    booking.paymentStatus = 'PAYMENT_SUBMITTED';
+    booking.paymentReference = payment.paymentId;
+    bookings[bookingIndex] = booking;
+ 
+    await updateStateKeys({
+      bookings,
+      paymentSubmissions: [...existingPayments, payment]
+    });
+ 
+    res.status(201).json({
+      ok: true,
+      message: 'Payment details submitted. Booking will be confirmed only after admin verifies the transaction.',
+      paymentId: payment.paymentId,
+      status: payment.status
+    });
+  } catch (err) {
+    console.error('Payment submission failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to submit payment details.' });
+  }
+});
+ 
+// ===============================
+// ADMIN: LIST PAYMENT SUBMISSIONS
+// ===============================
+ 
+app.get('/api/admin/payments', requireAdmin, async (req, res) => {
+  try {
+    const state = await getState();
+    res.json({ ok: true, payments: Array.isArray(state?.paymentSubmissions) ? state.paymentSubmissions : [] });
+  } catch (err) {
+    console.error('Unable to load payment submissions:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to load payments.' });
+  }
+});
+ 
+// ===============================
+// ADMIN: VERIFY / REJECT PAYMENT
+// Admin must independently check bank / UPI statement.
+// ===============================
+ 
+app.post('/api/admin/payments/:paymentId/decision', requireAdmin, async (req, res) => {
+  try {
+    const decision = cleanText(req.body?.decision, 20).toUpperCase();
+    const note = cleanText(req.body?.note, 300);
+ 
+    if (!['VERIFY', 'REJECT'].includes(decision)) {
+      return res.status(400).json({ ok: false, message: 'Decision must be VERIFY or REJECT.' });
+    }
+ 
+    const state = await getState();
+    const payments = Array.isArray(state?.paymentSubmissions) ? [...state.paymentSubmissions] : [];
+    const index = payments.findIndex(p => p && p.paymentId === req.params.paymentId);
+    if (index < 0) return res.status(404).json({ ok: false, message: 'Payment submission not found.' });
+ 
+    const payment = { ...payments[index] };
+    if (payment.status !== 'PAYMENT_SUBMITTED') {
+      return res.status(409).json({ ok: false, message: 'This payment is no longer awaiting verification.' });
+    }
+ 
+    const bookings = Array.isArray(state.bookings) ? [...state.bookings] : [];
+    const bookingIndex = findBookingIndex(bookings, payment.bookingId);
+    if (bookingIndex < 0) return res.status(404).json({ ok: false, message: 'Related booking not found.' });
+ 
+    const booking = { ...bookings[bookingIndex] };
+    const now = new Date().toISOString();
+ 
+    if (decision === 'VERIFY') {
+      // Only the admin decision changes payment to verified / booking to confirmed.
+      payment.status = 'PAID_VERIFIED';
+      payment.verifiedAt = now;
+      payment.verifiedBy = req.admin.username;
+      payment.adminNote = note;
+      booking.paymentStatus = 'PAID_VERIFIED';
+      booking.status = 'Confirmed';
+      booking.paymentVerifiedAt = now;
+    } else {
+      payment.status = 'REJECTED';
+      payment.verifiedAt = now;
+      payment.verifiedBy = req.admin.username;
+      payment.adminNote = note;
+      booking.paymentStatus = 'PAYMENT_REJECTED';
+    }
+ 
+    payments[index] = payment;
+    bookings[bookingIndex] = booking;
+    await updateStateKeys({ paymentSubmissions: payments, bookings });
+ 
+    res.json({
+      ok: true,
+      message: decision === 'VERIFY' ? 'Payment marked verified and booking confirmed.' : 'Payment rejected.',
+      payment
+    });
+  } catch (err) {
+    console.error('Payment decision failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to update payment status.' });
+  }
+});
+ 
+// ===============================
+// CUSTOMER: REQUEST CANCELLATION / REFUND
+// ===============================
+ 
+app.post('/api/refunds/request', async (req, res) => {
+  try {
+    const bookingId = cleanText(req.body?.bookingId, 100);
+    const reason = cleanText(req.body?.reason, 300);
+    if (!bookingId) return res.status(400).json({ ok: false, message: 'Booking ID is required.' });
+ 
+    const state = await getState();
+    const bookings = Array.isArray(state?.bookings) ? [...state.bookings] : [];
+    const bookingIndex = findBookingIndex(bookings, bookingId);
+    if (bookingIndex < 0) return res.status(404).json({ ok: false, message: 'Booking not found.' });
+ 
+    const booking = { ...bookings[bookingIndex] };
+    if (booking.paymentStatus !== 'PAID_VERIFIED') {
+      return res.status(409).json({ ok: false, message: 'Only a verified paid booking can request a refund.' });
+    }
+ 
+    const refundRequests = Array.isArray(state.refundRequests) ? [...state.refundRequests] : [];
+    const alreadyOpen = refundRequests.some(r =>
+      r.bookingId === bookingId && ['CANCEL_REQUESTED', 'REFUND_APPROVED', 'REFUND_PENDING'].includes(r.status)
+    );
+    if (alreadyOpen) return res.status(409).json({ ok: false, message: 'A cancellation/refund request is already open.' });
+ 
+    const refund = {
+      refundId: createId('REF'),
+      bookingId,
+      amount: Number(booking.totalAmount || booking.amount || booking.price || 0),
+      reason,
+      status: 'CANCEL_REQUESTED',
+      requestedAt: new Date().toISOString(),
+      reviewedAt: null,
+      reviewedBy: null,
+      refundUtr: null,
+      refundedAt: null
+    };
+ 
+    booking.refundStatus = 'CANCEL_REQUESTED';
+    bookings[bookingIndex] = booking;
+    refundRequests.push(refund);
+ 
+    await updateStateKeys({ bookings, refundRequests });
+    res.status(201).json({ ok: true, message: 'Cancellation request sent to admin for approval.', refund });
+  } catch (err) {
+    console.error('Refund request failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to submit cancellation request.' });
+  }
+});
+ 
+// ===============================
+// ADMIN: LIST REFUND REQUESTS
+// ===============================
+ 
+app.get('/api/admin/refunds', requireAdmin, async (req, res) => {
+  try {
+    const state = await getState();
+    res.json({ ok: true, refunds: Array.isArray(state?.refundRequests) ? state.refundRequests : [] });
+  } catch (err) {
+    console.error('Unable to load refunds:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to load refund requests.' });
+  }
+});
+ 
+// ===============================
+// ADMIN: APPROVE / REJECT REFUND REQUEST
+// Approval is not a money transfer.
+// ===============================
+ 
+app.post('/api/admin/refunds/:refundId/decision', requireAdmin, async (req, res) => {
+  try {
+    const decision = cleanText(req.body?.decision, 20).toUpperCase();
+    const note = cleanText(req.body?.note, 300);
+    if (!['APPROVE', 'REJECT'].includes(decision)) {
+      return res.status(400).json({ ok: false, message: 'Decision must be APPROVE or REJECT.' });
+    }
+ 
+    const state = await getState();
+    const refunds = Array.isArray(state?.refundRequests) ? [...state.refundRequests] : [];
+    const index = refunds.findIndex(r => r && r.refundId === req.params.refundId);
+    if (index < 0) return res.status(404).json({ ok: false, message: 'Refund request not found.' });
+ 
+    const refund = { ...refunds[index] };
+    if (refund.status !== 'CANCEL_REQUESTED') {
+      return res.status(409).json({ ok: false, message: 'This refund request has already been reviewed.' });
+    }
+ 
+    const bookings = Array.isArray(state.bookings) ? [...state.bookings] : [];
+    const bookingIndex = findBookingIndex(bookings, refund.bookingId);
+    if (bookingIndex < 0) return res.status(404).json({ ok: false, message: 'Related booking not found.' });
+ 
+    const booking = { ...bookings[bookingIndex] };
+    const now = new Date().toISOString();
+ 
+    refund.status = decision === 'APPROVE' ? 'REFUND_PENDING' : 'REFUND_REJECTED';
+    refund.reviewedAt = now;
+    refund.reviewedBy = req.admin.username;
+    refund.adminNote = note;
+ 
+    booking.refundStatus = refund.status;
+    if (decision === 'APPROVE') booking.status = 'Cancelled';
+ 
+    refunds[index] = refund;
+    bookings[bookingIndex] = booking;
+    await updateStateKeys({ refundRequests: refunds, bookings });
+ 
+    res.json({
+      ok: true,
+      message: decision === 'APPROVE'
+        ? 'Refund approved. Transfer money manually, then record the refund UTR.'
+        : 'Refund request rejected.',
+      refund
+    });
+  } catch (err) {
+    console.error('Refund decision failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to update refund request.' });
+  }
+});
+ 
+// ===============================
+// ADMIN: RECORD COMPLETED MANUAL REFUND
+// Set REFUNDED only after money is actually transferred.
+// ===============================
+ 
+app.post('/api/admin/refunds/:refundId/complete', requireAdmin, async (req, res) => {
+  try {
+    const refundUtr = cleanText(req.body?.refundUtr, 40);
+    if (!/^[A-Za-z0-9-]{6,40}$/.test(refundUtr)) {
+      return res.status(400).json({ ok: false, message: 'Enter a valid refund transaction reference / UTR.' });
+    }
+ 
+    const state = await getState();
+    const refunds = Array.isArray(state?.refundRequests) ? [...state.refundRequests] : [];
+    const index = refunds.findIndex(r => r && r.refundId === req.params.refundId);
+    if (index < 0) return res.status(404).json({ ok: false, message: 'Refund request not found.' });
+ 
+    const refund = { ...refunds[index] };
+    if (refund.status !== 'REFUND_PENDING') {
+      return res.status(409).json({ ok: false, message: 'Only an approved refund can be marked completed.' });
+    }
+ 
+    const bookings = Array.isArray(state.bookings) ? [...state.bookings] : [];
+    const bookingIndex = findBookingIndex(bookings, refund.bookingId);
+    if (bookingIndex < 0) return res.status(404).json({ ok: false, message: 'Related booking not found.' });
+ 
+    const now = new Date().toISOString();
+    refund.status = 'REFUNDED';
+    refund.refundUtr = refundUtr;
+    refund.refundedAt = now;
+    refund.completedBy = req.admin.username;
+ 
+    const booking = { ...bookings[bookingIndex] };
+    booking.refundStatus = 'REFUNDED';
+    booking.refundUtr = refundUtr;
+    booking.refundedAt = now;
+ 
+    refunds[index] = refund;
+    bookings[bookingIndex] = booking;
+    await updateStateKeys({ refundRequests: refunds, bookings });
+ 
+    res.json({ ok: true, message: 'Refund marked completed.', refund });
+  } catch (err) {
+    console.error('Refund completion failed:', err.message);
+    res.status(500).json({ ok: false, message: 'Unable to complete refund record.' });
+  }
+});
+ 
 // ===============================
 // BACKUP
 // ===============================
-
+ 
 app.get('/api/backups', async (req, res) => {
-
   try {
-
     const state = await getState();
-
-
     res.json({
-
       ok: true,
-
-      createdAt:
-        new Date().toISOString(),
-
+      createdAt: new Date().toISOString(),
       state: state || {}
-
     });
-
   } catch (err) {
-
-    console.error(
-      'TravelEase backup error:',
-      err.message
-    );
-
-    res.status(500).json({
-
-      ok: false,
-
-      message:
-        'Backup unavailable.'
-
-    });
-
+    console.error('TravelEase backup error:', err.message);
+    res.status(500).json({ ok: false, message: 'Backup unavailable.' });
   }
-
 });
-
-
+ 
 // ===============================
 // RESTORE BACKUP
 // ===============================
-
+ 
 app.post('/api/backups/restore', async (req, res) => {
-
   try {
-
-    const state =
-      req.body?.state;
-
-
-    if (
-      !state ||
-      typeof state !== 'object' ||
-      Array.isArray(state)
-    ) {
-
-      return res.status(400).json({
-
-        ok: false,
-
-        message:
-          'Invalid backup.'
-
-      });
-
+    const state = req.body?.state;
+ 
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      return res.status(400).json({ ok: false, message: 'Invalid backup.' });
     }
-
-
+ 
+    // Keep the current restore behavior, but do not restore an empty object.
+    if (Object.keys(state).length === 0) {
+      return res.status(400).json({ ok: false, message: 'Empty backup cannot be restored.' });
+    }
+ 
     await saveState(state);
-
-
-    res.json({
-
-      ok: true,
-
-      state: state
-
-    });
-
+    res.json({ ok: true, state });
   } catch (err) {
-
-    console.error(
-      'TravelEase restore error:',
-      err.message
-    );
-
-    res.status(500).json({
-
-      ok: false,
-
-      message:
-        'Restore failed.'
-
-    });
-
+    console.error('TravelEase restore error:', err.message);
+    res.status(500).json({ ok: false, message: 'Restore failed.' });
   }
-
 });
-
-
+ 
 // ===============================
 // SERVE FRONTEND
 // ===============================
-
-app.use(
-  express.static(
-    ROOT,
-    {
-      extensions: ['html']
-    }
-  )
-);
-
-
+ 
+app.use(express.static(ROOT, { extensions: ['html'] }));
+ 
 // ===============================
 // FRONTEND FALLBACK
 // ===============================
-
+ 
 app.get('*', (req, res) => {
-
-  if (
-    req.path.startsWith('/api/')
-  ) {
-
-    return res.status(404).json({
-
-      message:
-        'API route not found.'
-
-    });
-
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: 'API route not found.' });
   }
-
-
-  res.sendFile(
-    path.join(
-      ROOT,
-      'index.html'
-    )
-  );
-
+ 
+  res.sendFile(path.join(ROOT, 'index.html'));
 });
-
-
+ 
 // ===============================
 // START SERVER
 // ===============================
-
+ 
 connectMongo().finally(() => {
-
-  app.listen(
-    PORT,
-    () => {
-
-      console.log(
-        `TravelEase running on http://localhost:${PORT}`
-      );
-
-    }
-  );
-
+  app.listen(PORT, () => {
+    console.log(`TravelEase running on http://localhost:${PORT}`);
+  });
 });
