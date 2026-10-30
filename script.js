@@ -11004,9 +11004,14 @@ document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("DOMContentLoaded", function () {
         if (document.getElementById("paymentSubmissionForm")) {
             teLoadUpiConfig();
+            const savedPaymentBooking = teGetJSON("pendingBooking", null);
+            if (savedPaymentBooking && savedPaymentBooking.paymentStatus === "PAYMENT_SUBMITTED") {
+                teStartPaymentApprovalWatch();
+            }
         }
         if (localStorage.getItem("userRole") === "admin") {
             teLoadAdminPaymentData();
         }
     });
 })();
+
