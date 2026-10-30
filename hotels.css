@@ -1261,7 +1261,7 @@ button {
     }
     .search-capsule-bar {
         flex-direction: column;
-        padding: 20px;
+        padding: 20px; 
     }
     .item-divider {
         width: 100%;
