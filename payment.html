@@ -1,128 +1,85 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment - TravelEase</title>
-
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-
+    <link rel="stylesheet" href="style.css">
 </head>
-
-
 <body>
-
     <nav>
-
-        <div class="logo">
-
-            🚌 TravelEase
-
-        </div>
-
+        <div class="logo">🚌 TravelEase</div>
     </nav>
-
-
-    <div class="payment-page">
-
-        <div class="payment-container">
-
-            <h1>
-                💳 Payment
-            </h1>
-
-
+ 
+    <main class="payment-page">
+        <section class="payment-container">
+            <h1>💳 Complete Payment</h1>
             <p class="payment-subtitle">
-
-                Complete your booking payment
-
+                Pay using your UPI app and submit the UTR for verification.
             </p>
-
-
-            <div
-                id="paymentDetails"
-                class="payment-details"
-            >
-
+ 
+            <div id="paymentDetails" class="payment-details" aria-live="polite">
+                <!-- Booking details are loaded by script.js -->
             </div>
-
-
-            <h3>
-                Select Payment Method
-            </h3>
-
-
-            <div class="payment-methods">
-
-                <label class="payment-option">
-
-                    <input
-                        type="radio"
-                        name="payment"
-                        value="UPI"
-                        checked
-                    >
-
-                    📱 UPI
-
-                </label>
-
-
-                <label class="payment-option">
-
-                    <input
-                        type="radio"
-                        name="payment"
-                        value="Card"
-                    >
-
-                    💳 Credit / Debit Card
-
-                </label>
-
-
-                <label class="payment-option">
-
-                    <input
-                        type="radio"
-                        name="payment"
-                        value="Net Banking"
-                    >
-
-                    🏦 Net Banking
-
-                </label>
-
-            </div>
-
-
-            <button
-                class="primary-btn payment-btn"
-                onclick="processPayment()"
-            >
-
-                Pay Now
-
-            </button>
-
-
+ 
+            <section class="upi-payment-section" aria-labelledby="upiHeading">
+                <h3 id="upiHeading">Pay using UPI</h3>
+                <p>
+                    Use the UPI app on your phone, or scan the QR code if it is displayed.
+                    Complete the payment in your UPI app.
+                </p>
+ 
+                <div id="upiPaymentInfo" class="upi-payment-info" aria-live="polite">
+                    <!-- UPI ID and payment QR are inserted by script.js -->
+                </div>
+ 
+                <div id="upiQrContainer" class="upi-qr-container">
+                    <!-- QR code is inserted by script.js when available -->
+                </div>
+ 
+                <a id="openUpiApp"
+                   class="primary-btn"
+                   href="#"
+                   hidden>
+                    Open UPI App
+                </a>
+            </section>
+ 
+            <form id="paymentSubmissionForm" onsubmit="event.preventDefault(); processPayment();">
+                <label for="paymentUtr">UPI Transaction ID / UTR</label>
+                <input
+                    type="text"
+                    id="paymentUtr"
+                    name="paymentUtr"
+                    placeholder="Enter the UTR after paying"
+                    minlength="6"
+                    maxlength="40"
+                    autocomplete="off"
+                    required
+                >
+ 
+                <p class="payment-verification-note">
+                    Your booking will remain pending until the owner verifies the payment.
+                    Submitting a UTR does not automatically confirm your booking.
+                </p>
+ 
+                <button
+                    type="submit"
+                    id="submitPaymentBtn"
+                    class="primary-btn payment-btn">
+                    Submit Payment for Verification
+                </button>
+            </form>
+ 
+            <p id="paymentMessage" role="status" aria-live="polite"></p>
+ 
             <p class="demo-payment-text">
-
-                🔒 This is a demo payment system.
-                No real money will be charged.
-
+                🔒 Pay only to the UPI details shown on this page. Do not share your UPI PIN
+                or OTP with anyone. The owner verifies the payment manually.
             </p>
-
-        </div>
-
-    </div>
-
-
+        </section>
+    </main>
+ 
     <script src="script.js"></script>
-
 </body>
-
 </html>
