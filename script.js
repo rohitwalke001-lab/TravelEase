@@ -1,4 +1,3 @@
-
 // =========================================
 // DEFAULT BUS DATA
 // =========================================
@@ -10715,6 +10714,17 @@ window.addEventListener(
         return hydrationPromise;
     }
  
+    // Explicit save used by payment submission so the booking reaches MongoDB
+    // before the payment API tries to locate it. It never uploads before hydration.
+    window.travelEaseSaveNow = async function () {
+        await hydrateFromBackend();
+        if (!backendReady) return false;
+        clearTimeout(syncTimer);
+        await syncQueue;
+        await sendStateToBackend();
+        return true;
+    };
+ 
     // Expose a safe manual retry for troubleshooting from browser console.
     window.travelEaseRetrySync = async function () {
         hydrationPromise = null;
@@ -10816,3 +10826,404 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+ 
+ 
+/* ========================================================================
+   TravelEase Payment + Refund Integration
+   Uses the payment/refund endpoints added in the updated server.js.
+   Customer payments remain pending until the owner verifies the UTR.
+   ======================================================================== */
+(function () {
+    "use strict";
+ 
+    const TE_API = window.location.origin + "/api";
+ 
+    function teGetJSON(key, fallback) {
+        try {
+            const value = JSON.parse(localStorage.getItem(key));
+            return value == null ? fallback : value;
+        } catch (error) {
+            return fallback;
+        }
+    }
+ 
+    function teSetMessage(message, isError) {
+        const element = document.getElementById("paymentMessage");
+        if (element) {
+            element.textContent = message;
+            element.style.color = isError ? "#b42318" : "#137333";
+        } else {
+            alert(message);
+        }
+    }
+ 
+    async function teApi(path, options) {
+        const config = options || {};
+        config.headers = Object.assign(
+            { "Accept": "application/json" },
+            config.headers || {}
+        );
+        const response = await fetch(TE_API + path, config);
+        let payload = {};
+        try { payload = await response.json(); } catch (error) {}
+        if (!response.ok) {
+            throw new Error(payload.message || ("Request failed: HTTP " + response.status));
+        }
+        return payload;
+    }
+ 
+    function teEnsureBookingId(booking) {
+        if (!booking.bookingId) {
+            booking.bookingId = "TE-" + Date.now() + "-" +
+                Math.random().toString(36).slice(2, 8).toUpperCase();
+        }
+        return booking.bookingId;
+    }
+ 
+    async function teSaveBookingToCloud(booking) {
+        // Keep all existing bookings; only add/update the booking being paid.
+        const saved = teGetJSON("bookings", Array.isArray(window.bookings) ? window.bookings : []);
+        const index = saved.findIndex(item =>
+            item && String(item.bookingId || "") === String(booking.bookingId)
+        );
+        if (index >= 0) saved[index] = Object.assign({}, saved[index], booking);
+        else saved.push(booking);
+ 
+        localStorage.setItem("bookings", JSON.stringify(saved));
+        window.bookings = saved;
+        if (typeof window.travelEaseSaveNow === "function") {
+            const ok = await window.travelEaseSaveNow();
+            if (!ok) throw new Error("Cloud database is not ready. Your local data was kept; please retry shortly.");
+        } else {
+            // Older bridge fallback: give its queued save a moment to complete.
+            await new Promise(resolve => setTimeout(resolve, 700));
+        }
+    }
+ 
+    async function teLoadUpiConfig() {
+        const info = document.getElementById("upiPaymentInfo");
+        const qrContainer = document.getElementById("upiQrContainer");
+        const openLink = document.getElementById("openUpiApp");
+        if (!info) return;
+ 
+        try {
+            const config = await teApi("/payment/config");
+            const booking = teGetJSON("pendingBooking", null);
+            if (!booking) throw new Error("Booking information not found. Please start booking again.");
+ 
+            const upiId = String(config.upiId || "").trim();
+            const payeeName = String(config.payeeName || "TravelEase").trim();
+            if (!upiId) throw new Error("Owner UPI ID is not configured.");
+ 
+            const amount = Number(booking.price);
+            const params = new URLSearchParams({
+                pa: upiId,
+                pn: payeeName,
+                am: amount.toFixed(2),
+                cu: "INR",
+                tn: "TravelEase " + (booking.bookingId || "Booking")
+            });
+            const upiLink = "upi://pay?" + params.toString();
+ 
+            info.textContent = "UPI ID: " + upiId + " | Payee: " + payeeName;
+            if (openLink) {
+                openLink.href = upiLink;
+                openLink.hidden = false;
+                openLink.setAttribute("target", "_blank");
+                openLink.setAttribute("rel", "noopener");
+            }
+            if (qrContainer) {
+                const qr = document.createElement("img");
+                qr.alt = "UPI payment QR code";
+                qr.width = 220;
+                qr.height = 220;
+                qr.loading = "lazy";
+                qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
+                    encodeURIComponent(upiLink);
+                qrContainer.replaceChildren(qr);
+            }
+        } catch (error) {
+            info.textContent = error.message;
+            if (openLink) openLink.hidden = true;
+            if (qrContainer) qrContainer.replaceChildren();
+        }
+    }
+ 
+    async function teProcessPayment() {
+        const button = document.getElementById("submitPaymentBtn");
+        const utrInput = document.getElementById("paymentUtr");
+        const booking = teGetJSON("pendingBooking", null);
+ 
+        if (!booking) {
+            teSetMessage("Booking information not found. Please start booking again.", true);
+            return;
+        }
+        const utr = utrInput ? utrInput.value.trim() : "";
+        if (!/^[A-Za-z0-9-]{6,40}$/.test(utr)) {
+            teSetMessage("Please enter a valid UPI UTR / transaction reference (6–40 letters or numbers).", true);
+            if (utrInput) utrInput.focus();
+            return;
+        }
+ 
+        const amount = Number(booking.price);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            teSetMessage("Invalid booking amount. Please contact the owner.", true);
+            return;
+        }
+ 
+        if (button) {
+            button.disabled = true;
+            button.textContent = "Submitting...";
+        }
+ 
+        try {
+            teEnsureBookingId(booking);
+            booking.status = "Pending Payment";
+            booking.paymentStatus = "PAYMENT_SUBMITTED";
+            booking.paymentMethod = "UPI";
+            booking.paymentUtr = utr;
+            booking.paymentSubmittedAt = new Date().toISOString();
+ 
+            // Persist booking first so the API can find it by bookingId.
+            await teSaveBookingToCloud(booking);
+            localStorage.setItem("pendingBooking", JSON.stringify(booking));
+ 
+            const users = teGetJSON("users", []);
+            const customer = users.find(user =>
+                user && user.email === localStorage.getItem("currentUser")
+            ) || {};
+ 
+            const result = await teApi("/payments/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    bookingId: booking.bookingId,
+                    utr: utr,
+                    amount: amount,
+                    customerName: customer.name || booking.customer || "",
+                    customerMobile: customer.mobile || customer.phone || ""
+                })
+            });
+ 
+            booking.paymentStatus = result.status || "PAYMENT_SUBMITTED";
+            booking.status = "Pending Payment";
+            const latestBookings = teGetJSON("bookings", []);
+            const idx = latestBookings.findIndex(item =>
+                item && item.bookingId === booking.bookingId
+            );
+            if (idx >= 0) latestBookings[idx] = Object.assign({}, latestBookings[idx], booking);
+            localStorage.setItem("bookings", JSON.stringify(latestBookings));
+            window.bookings = latestBookings;
+            localStorage.setItem("pendingBooking", JSON.stringify(booking));
+            if (typeof window.travelEaseSaveNow === "function") {
+                await window.travelEaseSaveNow();
+            }
+ 
+            teSetMessage("UTR submitted successfully. Your booking is still pending and will be confirmed only after the owner verifies the payment.");
+            if (button) button.textContent = "Submitted – Awaiting Verification";
+            if (utrInput) utrInput.disabled = true;
+        } catch (error) {
+            teSetMessage(error.message || "Unable to submit payment details. Please try again.", true);
+            if (button) {
+                button.disabled = false;
+                button.textContent = "Submit Payment for Verification";
+            }
+        }
+    }
+ 
+    async function teCancelBooking(index) {
+        const list = teGetJSON("bookings", Array.isArray(window.bookings) ? window.bookings : []);
+        const booking = list[index];
+        if (!booking) {
+            alert("Booking not found!");
+            return;
+        }
+ 
+        const status = String(booking.status || "").toLowerCase();
+        if (["cancelled", "expired", "pending payment"].includes(status)) {
+            alert("This booking cannot be cancelled in its current status.");
+            return;
+        }
+        if (booking.refundStatus === "CANCEL_REQUESTED" ||
+            booking.refundStatus === "REFUND_PENDING" ||
+            booking.refundStatus === "REFUNDED") {
+            alert("A cancellation/refund request is already in progress or completed.");
+            return;
+        }
+        if (!booking.bookingId) {
+            alert("This older booking has no server booking ID. Please contact the owner to request cancellation; no automatic refund has been made.");
+            return;
+        }
+        if (!confirm("Send a cancellation and refund request to the owner? The refund is not automatic.")) return;
+ 
+        try {
+            const result = await teApi("/refunds/request", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    bookingId: booking.bookingId,
+                    reason: "Customer requested cancellation"
+                })
+            });
+            booking.refundStatus = result.refund ? result.refund.status : "CANCEL_REQUESTED";
+            list[index] = booking;
+            localStorage.setItem("bookings", JSON.stringify(list));
+            window.bookings = list;
+            if (typeof window.travelEaseSaveNow === "function") await window.travelEaseSaveNow();
+            alert("Cancellation request sent. The owner must approve it and manually transfer any refund.");
+            if (typeof showBookings === "function") showBookings();
+            if (typeof renderBookings === "function") renderBookings();
+        } catch (error) {
+            alert(error.message || "Unable to send cancellation request.");
+        }
+    }
+ 
+    async function teAdminLogin() {
+        const usernameField = document.getElementById("username");
+        const passwordField = document.getElementById("password");
+        const username = usernameField ? usernameField.value.trim() : "";
+        const password = passwordField ? passwordField.value : "";
+ 
+        if (!username || !password) {
+            alert("Please enter admin username and password.");
+            return;
+        }
+ 
+        try {
+            const result = await teApi("/auth/admin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+            if (!result.token) throw new Error("Admin token was not returned by the server.");
+            localStorage.setItem("adminToken", result.token);
+            localStorage.setItem("currentUser", result.displayName || "TravelEase Owner");
+            localStorage.setItem("userRole", "admin");
+            alert("Owner login successful!");
+            window.location.href = "admin-dashboard.html";
+        } catch (error) {
+            alert(error.message || "Admin login failed.");
+        }
+    }
+ 
+    async function teLoadAdminPaymentData() {
+        if (localStorage.getItem("userRole") !== "admin") return;
+        const token = localStorage.getItem("adminToken");
+        if (!token) return;
+ 
+        const headers = { "Authorization": "Bearer " + token, "Accept": "application/json" };
+        try {
+            const [paymentData, refundData] = await Promise.all([
+                teApi("/admin/payments", { headers }),
+                teApi("/admin/refunds", { headers })
+            ]);
+            window.travelEaseAdminPayments = paymentData.payments || [];
+            window.travelEaseAdminRefunds = refundData.refunds || [];
+            document.dispatchEvent(new CustomEvent("travelease:admin-payment-data", {
+                detail: {
+                    payments: window.travelEaseAdminPayments,
+                    refunds: window.travelEaseAdminRefunds
+                }
+            }));
+            // Dashboard sections are added in the admin-dashboard.html update.
+            if (typeof window.renderAdminPayments === "function") window.renderAdminPayments(window.travelEaseAdminPayments);
+            if (typeof window.renderAdminRefunds === "function") window.renderAdminRefunds(window.travelEaseAdminRefunds);
+        } catch (error) {
+            console.error("TravelEase admin payment data:", error);
+            if (error.message && /session|authentication|admin/i.test(error.message)) {
+                localStorage.removeItem("adminToken");
+            }
+        }
+    }
+ 
+    async function teAdminPaymentDecision(paymentId, decision) {
+        const token = localStorage.getItem("adminToken");
+        if (!token) return alert("Admin session missing. Please log in again.");
+        if (!confirm(decision === "VERIFY"
+            ? "Have you independently confirmed this payment in your UPI/bank account?"
+            : "Reject this payment submission?")) return;
+ 
+        try {
+            await teApi("/admin/payments/" + encodeURIComponent(paymentId) + "/decision", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ decision: decision })
+            });
+            alert(decision === "VERIFY" ? "Payment verified and booking confirmed." : "Payment rejected.");
+            await teLoadAdminPaymentData();
+        } catch (error) {
+            alert(error.message || "Unable to update payment.");
+        }
+    }
+ 
+    async function teAdminRefundDecision(refundId, decision) {
+        const token = localStorage.getItem("adminToken");
+        if (!token) return alert("Admin session missing. Please log in again.");
+        if (!confirm(decision === "APPROVE"
+            ? "Approve the cancellation request? This does not transfer money."
+            : "Reject this cancellation/refund request?")) return;
+ 
+        try {
+            await teApi("/admin/refunds/" + encodeURIComponent(refundId) + "/decision", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ decision: decision })
+            });
+            alert(decision === "APPROVE"
+                ? "Refund approved. Transfer the money manually, then record its UTR."
+                : "Refund request rejected.");
+            await teLoadAdminPaymentData();
+        } catch (error) {
+            alert(error.message || "Unable to update refund request.");
+        }
+    }
+ 
+    async function teCompleteRefund(refundId) {
+        const token = localStorage.getItem("adminToken");
+        if (!token) return alert("Admin session missing. Please log in again.");
+        const utr = prompt("Enter the refund transaction UTR after you have actually transferred the money:");
+        if (!utr) return;
+        if (!/^[A-Za-z0-9-]{6,40}$/.test(utr.trim())) {
+            alert("Please enter a valid refund UTR.");
+            return;
+        }
+        try {
+            await teApi("/admin/refunds/" + encodeURIComponent(refundId) + "/complete", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ refundUtr: utr.trim() })
+            });
+            alert("Refund marked complete after recording the transfer UTR.");
+            await teLoadAdminPaymentData();
+        } catch (error) {
+            alert(error.message || "Unable to complete refund.");
+        }
+    }
+ 
+    // Public functions used by existing HTML onclick handlers and the admin page.
+    window.processPayment = teProcessPayment;
+    window.cancelBooking = teCancelBooking;
+    window.adminLogin = teAdminLogin;
+    window.loadTravelEaseAdminPayments = teLoadAdminPaymentData;
+    window.adminPaymentDecision = teAdminPaymentDecision;
+    window.adminRefundDecision = teAdminRefundDecision;
+    window.completeTravelEaseRefund = teCompleteRefund;
+ 
+    document.addEventListener("DOMContentLoaded", function () {
+        if (document.getElementById("paymentSubmissionForm")) {
+            teLoadUpiConfig();
+        }
+        if (localStorage.getItem("userRole") === "admin") {
+            teLoadAdminPaymentData();
+        }
+    });
+})();
