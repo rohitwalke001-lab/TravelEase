@@ -474,6 +474,28 @@ app.post('/api/auth/customer-register', async (req, res) => {
   }
 });
  
+// Return the stored PBKDF2 salt so the browser can derive the same hash
+// before login. A salt is not a password or authentication secret.
+app.get('/api/auth/customer-salt', async (req, res) => {
+  try {
+    const email = cleanText(req.query?.email, 120).toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ ok: false, message: 'A valid email address is required.' });
+    }
+    const state = await getState();
+    const users = Array.isArray(state?.users) ? state.users : [];
+    const user = users.find(item => String(item?.email || '').toLowerCase() === email && item.role === 'customer');
+    if (!user || !validCustomerPasswordData(user.passwordHash, user.passwordSalt)) {
+      return res.status(404).json({ ok: false, message: 'Customer account not found. Please register this account.' });
+    }
+    res.set('Cache-Control', 'no-store');
+    return res.json({ ok: true, passwordSalt: user.passwordSalt });
+  } catch (err) {
+    console.error('Customer salt lookup failed:', err.message);
+    return res.status(500).json({ ok: false, message: 'Unable to start customer login.' });
+  }
+});
+ 
 app.post('/api/auth/customer-login', async (req, res) => {
   try {
     const email = cleanText(req.body?.email, 120).toLowerCase();
