@@ -1,4 +1,4 @@
- 
+
 // =========================================
 // DEFAULT BUS DATA
 // =========================================
@@ -2575,51 +2575,43 @@ async function registerUser() {
  
     const name = nameField ? nameField.value.trim() : "";
     const email = emailField ? emailField.value.trim().toLowerCase() : "";
-    const password = passwordField ? passwordField.value.trim() : "";
+    const password = passwordField ? passwordField.value : "";
  
     if (!name || !email || !password) {
         alert("Please fill all fields!");
         return;
     }
- 
     if (password.length < 8) {
         alert("Please use a password with at least 8 characters.");
         return;
     }
  
     try {
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const existingUser = users.find(user =>
-            user && String(user.email || "").toLowerCase() === email
-        );
- 
-        if (existingUser) {
-            alert("Email already registered!");
-            return;
-        }
- 
         const passwordData = await hashCustomerPassword(password);
- 
-        users.push({
-            name: name,
-            email: email,
-            passwordHash: passwordData.passwordHash,
-            passwordSalt: passwordData.passwordSalt,
-            role: "customer",
-            balance: 0
+        const response = await fetch(window.location.origin + "/api/auth/customer-register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({
+                name: name,
+                email: email,
+                passwordHash: passwordData.passwordHash,
+                passwordSalt: passwordData.passwordSalt
+            })
         });
- 
-        localStorage.setItem("users", JSON.stringify(users));
- 
-        alert("Registration successful!");
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.ok) {
+            throw new Error(result.message || "Registration failed. Please try again.");
+        }
+        alert("Registration successful! Please log in.");
         window.location.href = "login.html";
     } catch (error) {
-        alert(error.message || "Unable to register securely. Please try again.");
+        console.error("TravelEase customer registration failed:", error);
+        alert(error.message || "Unable to register. Please check your connection and try again.");
     }
 }
  
  
-// =========================================
 // CUSTOMER LOGIN
 // =========================================
  
@@ -2628,7 +2620,7 @@ async function loginUser() {
     const passwordField = document.getElementById("password");
  
     const email = emailField ? emailField.value.trim().toLowerCase() : "";
-    const password = passwordField ? passwordField.value.trim() : "";
+    const password = passwordField ? passwordField.value : "";
  
     if (!email || !password) {
         alert("Please enter email and password.");
@@ -2636,37 +2628,56 @@ async function loginUser() {
     }
  
     try {
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const user = users.find(item =>
-            item && String(item.email || "").toLowerCase() === email
+        const saltResponse = await fetch(
+            window.location.origin + "/api/auth/customer-salt?email=" + encodeURIComponent(email),
+            { method: "GET", headers: { "Accept": "application/json" }, cache: "no-store" }
         );
- 
-        if (!user || !(await verifyCustomerPassword(password, user))) {
-            alert("Invalid email or password!");
-            return;
+        const saltResult = await saltResponse.json().catch(() => ({}));
+        if (!saltResponse.ok || !saltResult.ok || !saltResult.passwordSalt) {
+            throw new Error(saltResult.message || "Customer account not found on the server. Please register first.");
         }
  
-        if (!user.passwordHash || !user.passwordSalt) {
-            const upgraded = await hashCustomerPassword(password);
-            user.passwordHash = upgraded.passwordHash;
-            user.passwordSalt = upgraded.passwordSalt;
-            delete user.password;
-            localStorage.setItem("users", JSON.stringify(users));
+        const passwordData = await hashCustomerPassword(password, saltResult.passwordSalt);
+        const loginResponse = await fetch(window.location.origin + "/api/auth/customer-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            cache: "no-store",
+            body: JSON.stringify({ email: email, passwordHash: passwordData.passwordHash })
+        });
+        const loginResult = await loginResponse.json().catch(() => ({}));
+        if (!loginResponse.ok || !loginResult.ok || !loginResult.token) {
+            throw new Error(loginResult.message || "Invalid email or password.");
         }
  
-        localStorage.setItem("currentUser", user.email);
+        localStorage.setItem("customerToken", loginResult.token);
+        localStorage.setItem("currentUser", loginResult.user.email);
+        localStorage.setItem("currentUserName", loginResult.user.name || "");
         localStorage.setItem("userRole", "customer");
+ 
+        const bookingsResponse = await fetch(window.location.origin + "/api/customer/bookings", {
+            method: "GET",
+            headers: {
+                "Accept": "application/json",
+                "Authorization": "Bearer " + loginResult.token
+            },
+            cache: "no-store"
+        });
+        if (bookingsResponse.ok) {
+            const bookingsResult = await bookingsResponse.json().catch(() => ({}));
+            if (bookingsResult.ok && Array.isArray(bookingsResult.bookings)) {
+                localStorage.setItem("bookings", JSON.stringify(bookingsResult.bookings));
+            }
+        }
  
         alert("Login successful!");
         window.location.href = "index.html";
     } catch (error) {
-        alert(error.message || "Unable to log in. Please try again.");
+        console.error("TravelEase customer login failed:", error);
+        alert(error.message || "Unable to log in. Please check your connection and try again.");
     }
 }
  
  
-// =========================================
-// =========================================
 // LOGOUT
 // =========================================
  
@@ -10468,25 +10479,6 @@ window.addEventListener(
                 if (latest.paymentVerifiedAt) item.paymentVerifiedAt = latest.paymentVerifiedAt;
                 if (latest.refundedAt) item.refundedAt = latest.refundedAt;
                 changed = true;
- 
-                // Keep the in-progress payment page in sync as well. Once the
-                // server confirms verification, show a clear success state.
-                if (String(latest.paymentStatus || "").toUpperCase() === "PAID_VERIFIED") {
-                    const pending = parseStoredValue("pendingBooking");
-                    if (pending && String(pending.bookingId) === String(item.bookingId)) {
-                        pending.status = latest.status || "Confirmed";
-                        pending.paymentStatus = "PAID_VERIFIED";
-                        pending.paymentVerifiedAt = latest.paymentVerifiedAt || null;
-                        originalSetItem.call(localStorage, "pendingBooking", JSON.stringify(pending));
-                        const form = document.getElementById("paymentSubmissionForm");
-                        if (form) form.hidden = true;
-                        const message = document.getElementById("paymentMessage");
-                        if (message) {
-                            message.textContent = "Payment successful! Your booking is confirmed.";
-                            message.style.color = "#137333";
-                        }
-                    }
-                }
             } catch (error) {
                 console.warn("TravelEase booking status refresh skipped:", error);
             }
@@ -10557,29 +10549,8 @@ window.addEventListener(
     if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", () => hydrateFromBackend(), { once: true });
     } else hydrateFromBackend();
- 
-    // Customer pages must periodically fetch the authoritative booking/payment
-    // status from the server. Without this call, a locally cached Pending Payment
-    // value can remain visible after the owner verifies the payment.
-    function startCustomerBookingStatusRefresh() {
-        if (isAdminSession()) return;
-        refreshCustomerBookingStatuses();
-        window.setInterval(() => {
-            if (!document.hidden) refreshCustomerBookingStatuses();
-        }, 10000);
-        document.addEventListener("visibilitychange", () => {
-            if (!document.hidden) refreshCustomerBookingStatuses();
-        });
-    }
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", startCustomerBookingStatusRefresh, { once: true });
-    } else {
-        startCustomerBookingStatusRefresh();
-    }
- 
     window.addEventListener("online", function () {
         if (!backendReady) { hydrationPromise = null; hydrateFromBackend(); }
-        if (!isAdminSession()) refreshCustomerBookingStatuses();
     });
 })();
 document.addEventListener("DOMContentLoaded", function () {
